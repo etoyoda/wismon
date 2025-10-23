@@ -25,6 +25,9 @@ test -d /nwp/m0 || sudo install -d -o nwp -g nwp /nwp/m0
 sudo install -m 0444 readme-datadir.txt /nwp/m0/README.txt
 
 test -f mdtopic.gdbm || false
-sudo install -m 0444 mdtopic.gdbm /nwp/m0/
+if test ! -f /nwp/m0/mdtopic.gdbm
+then
+  sudo install -m 0444 mdtopic.gdbm /nwp/m0/
+fi
 
 test -d /nwp/m1 || sudo install -d -o nwp -g nwp /nwp/m1

@@ -1,0 +1,13 @@
+[Unit]
+Description=WisMon2 wisdev global cache
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/ruby /usr/local/bin/wnmsaver.rb --out=/nwp/m0/devgc%%H.tar devgc
+Restart=always
+RestartSec=30
+User=nwp
+Group=nwp
+
+[Install]
+WantedBy=multi-user.target

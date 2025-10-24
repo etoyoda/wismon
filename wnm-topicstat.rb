@@ -75,6 +75,13 @@ def retrtopic topic
   topic.sub!(/\.json$/, '')
   topic.sub!(/^(wnm\d{4}-\d{6}|\d{4}[A-Z]{4})-/, '')
   topic = '(gts)' if /-gts-to-wis2_/ === topic
+  topic.sub!(/_d_c_w_p_a_/, '_data_core_weather_prediction_analysis_')
+  topic.sub!(/_d_c_w_p_f_/, '_data_core_weather_prediction_forecast_')
+  topic.sub!(/_d_c_w_p_forecast/, '_data_core_weather_prediction_forecast')
+  topic.sub!(/_d_c_w_s_sentinel/, '_data_core_weather_space-based-observations_sentinel')
+  topic.sub!(/_d_c_w_/, '_data_core_weather_')
+  topic.sub!(/_d_c_/, '_data_core_')
+  topic.sub!(/_d_/, '_data_')
   topic
 end
 

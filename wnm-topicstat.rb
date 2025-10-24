@@ -36,6 +36,8 @@ def guess_topic rec, gdbm
       topic = "dummy/a/wis2/#$1/data/core/weather/surface-based-observations/synop"
     when /^urn:x-wmo:md:int-ecmwf:open-data:\d+:\d\dz:0p25:\w\w:\d+h$/
       topic = "dummy/a/wis2/int-ecmwf/data/core/weather/prediction/forecast"
+    when /^urn:wmo:md:([-\w]+):(synop|automaticas|2obre1|uspxz9|3v3tr2)$/
+      topic = "dummy/a/wis2/#$1/data/core/weather/surface-based-observations/synop"
     end
   end
   if topic.nil? then
@@ -51,6 +53,18 @@ def guess_topic rec, gdbm
       topic = "fake/a/wis2/#$1/data/#$2/#$3/#$4/#$5"
     when /^([-\w]+)\/data\/(core|recommended)\/(weather)\/([-\w]+)\/([-\w]+)/
       topic = "fake/a/wis2/#$1/data/#$2/#$3/#$4/#$5"
+    when /^W_XX-EUMETSAT-Darmstadt,SOUNDING\+SATELLITE,([0-9A-Z]+)\+([0-9A-Za-z]+)_/
+      topic = "fake/a/wis2/int-eumetsat/data/core/space-based-observations/#{$1.downcase}/#{$2.downcase}-sounding"
+    when /^W_(XX-EUMETSAT-Darmstadt|FR-CNES-Toulouse),SURFACE\+SATELLITE,([0-9A-Z]+)\+([+0-9A-Z]+)_/
+      centreid,n2,n3 = $1,$2,$3
+      centreid = case centreid when /^XX/ then 'int-eumetsat' when /^FR/ then 'fr-cnes' else centreid end
+      topic = "fake/a/wis2/#{centreid}/data/core/space-based-observations/#{n2.downcase}/#{n3.downcase.gsub(/\+/,'-')}-surface"
+    when /^W_XX-EUMETSAT-Darmstadt,SING\+LEV\+SAT,([0-9A-Z]+)\+([A-Z]+)_/
+      topic = "fake/a/wis2/int-eumetsat/data/core/space-based-observations/#{$1.downcase}/#{$2.downcase}-singlev"
+    when /^W_XX-EUMETSAT-Darmstadt,IMG\+SAT,([0-9A-Z]+)\+([-0-9A-Z]+)_/
+      topic = "fake/a/wis2/int-eumetsat/data/core/space-based-observations/#{$1.downcase}/#{$2.downcase.gsub(/-+/,'-').sub(/-BUFR/,'')}-surface"
+    when /^W_XX-EUMETSAT-([a-z]+),([a-z]+),DBNet\+([0-9a-z]+)/
+      topic = "fake/a/wis2/int-eumetsat/data/core/space-based-observations/#{$2.downcase}/#{$1.downcase}-dbnet"
     end
   end
   topic

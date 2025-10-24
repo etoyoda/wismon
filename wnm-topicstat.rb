@@ -82,6 +82,7 @@ def retrtopic topic
   topic.sub!(/_d_c_w_/, '_data_core_weather_')
   topic.sub!(/_d_c_/, '_data_core_')
   topic.sub!(/_d_/, '_data_')
+  topic.gsub!(/_/, '/')
   topic
 end
 

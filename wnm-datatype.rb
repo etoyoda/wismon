@@ -120,6 +120,7 @@ SERIES.each{|name, path|
     TarReader.open(gzfn){|tar|
       tar.each_entry{|ent|
         json=ent.read
+        next if json.nil?
         rec=JSON.parse(json)
         mdid = rec['properties']['metadata_id']
         next unless mdid

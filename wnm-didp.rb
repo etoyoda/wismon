@@ -17,6 +17,7 @@ SERIES.each{|name, path|
     TarReader.open(gzfn){|tar|
       tar.each_entry{|ent|
         json=ent.read
+        next if json.nil?
         rec=JSON.parse(json)
         did = rec['properties']['data_id']
         puts did

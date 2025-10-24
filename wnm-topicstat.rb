@@ -64,7 +64,7 @@ def guess_topic rec, gdbm
     when /^W_XX-EUMETSAT-Darmstadt,IMG\+SAT,([0-9A-Z]+)\+([-0-9A-Z]+)_/
       topic = "fake/a/wis2/int-eumetsat/data/core/space-based-observations/#{$1.downcase}/#{$2.downcase.gsub(/-+/,'-').sub(/-BUFR/,'')}-surface"
     when /^W_XX-EUMETSAT-([a-z]+),([a-z]+),DBNet\+([0-9a-z]+)/
-      topic = "fake/a/wis2/int-eumetsat/data/core/space-based-observations/#{$2.downcase}/#{$1.downcase}-dbnet"
+      topic = "fake/a/wis2/int-eumetsat-#{$1}/data/core/space-based-observations/#{$3.downcase}/#{$2.downcase}"
     end
   end
   topic

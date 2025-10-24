@@ -3,14 +3,14 @@
 require 'zlib'
 require 'tarreader'
 require 'json'
-require 'gdbm'
 
 SERIES = [
  ['DevGC','/nwp/m0/jmagc[012][0-9].tar.gz'],
-# ['JmaGC','/nwp/m0/jmagc[012][0-9].tar.gz'],
 # ['DevNode','/nwp/m0/devnode[012][0-9].tar.gz'],
 ]
 
+=begin
+require 'gdbm'
 gdbm = GDBM.new('/nwp/m0/mdtopic.gdbm', 0, GDBM::READER)
 
 def guess_topic rec, gdbm
@@ -69,6 +69,14 @@ def guess_topic rec, gdbm
   end
   topic
 end
+=end
+
+def retrtopic topic
+  topic.sub!(/\.json$/, '')
+  topic.sub!(/^(wnm\d{4}-\d{6}|\d{4}[A-Z]{4})-/, '')
+  topic = '(gts)' if /-gts-to-wis2_/ === topic
+  topic
+end
 
 ts = Hash.new(0)
 
@@ -79,15 +87,7 @@ SERIES.each{|name, path|
       tar.each_entry{|ent|
         json=ent.read
         rec=JSON.parse(json)
-        mdid = rec['properties']['metadata_id']
-        topic = guess_topic(rec, gdbm)
-        if !topic
-          if mdid then
-            STDERR.puts "unresolvable mdid=#{mdid}"
-          else
-            STDERR.puts "unresolvable dataid=#{rec['properties']['data_id']}"
-          end
-        end
+        topic = retrtopic(ent.name)
         ts[topic] = 0 unless ts.include?(topic)
         ts[topic] += 1
       }

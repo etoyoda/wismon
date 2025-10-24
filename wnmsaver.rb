@@ -63,7 +63,7 @@ class TarSaver
       @fnam = tmp
       @tar = TarWriter.new(@fnam, 'a')
       STDERR.puts "open #{@fnam}"
-      @n = '000000'
+      @n = 'AAAA'
     end
     yield @tar, @n, @now
     @n = @n.succ
@@ -76,6 +76,7 @@ class TarSaver
 
 end
 
+MAXFNAM=85
 
 ss = TarSaver.new(fnpat)
 begin
@@ -88,10 +89,10 @@ begin
     c.get do |topic,message|
       ss.save { |tar, n, now|
         tnam = topic.sub(/^\w+\/a\/wis2\//,'')
-        tnam.sub!(/(\/\w)[-\w]+/, '\1') or break while tnam.length > 64
-        tnam = tnam[0,64] if tnam.length > 64
+        tnam.sub!(/(\/\w)[-\w]+/, '\1') or break while tnam.length > MAXFNAM
+        tnam = tnam[0,MAXFNAM] if tnam.length > MAXFNAM
         tnam.gsub!(/\//, '_')
-        mnam = "wnm#{now.strftime('%d%H')}-#{n}-#{tnam}.json"
+        mnam = "#{now.strftime('%d%H')}#{n}-#{tnam}.json"
         STDERR.puts("save #{topic} #{mnam}") if $VERBOSE
         tar.add(mnam, message)
       }

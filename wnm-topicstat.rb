@@ -24,6 +24,25 @@ def fnam_to_topic topic
   topic
 end
 
+def wnm_size(wnm)
+  if wnm['links']
+    clink = nil
+    for link in wnm['links']
+      clink = link if /^(canonical|update)$/ === link['rel']
+    end
+    if clink and clink['length']
+      return clink['length'].to_i
+    end
+  end
+  if wnm['properties']
+    c = wnm['properties']['content']    
+    if c and c['size']
+      return c['size'].to_i
+    end
+  end
+  0
+end
+
 ts = Hash.new(0)
 sizes = Hash.new(0)
 
@@ -33,21 +52,20 @@ SERIES.each{|name, path|
     TarReader.open(gzfn){|tar|
       tar.each_entry{|ent|
         json=ent.read
-        rec=JSON.parse(json)
+        wnm=JSON.parse(json)
         topic = fnam_to_topic(ent.name)
-        ts[topic] = 0 unless ts.include?(topic)
+        #ts[topic] = 0 unless ts[topic]
         ts[topic] += 1
+        size = wnm_size(wnm)
+        #sizes[topic] = 0 unless sizes[topic]
+        sizes[topic] += size
       }
     }
   }
 }
 
-if ts.include?(nil) then
-  nnil = ts[nil]
-  ts.delete(nil)
-  ts['(nil)']=nnil
-end
 ts.keys.sort.each do |topic|
-  n = ts[topic]
-  printf("%7u %s\n", n || -1, topic)
+  n = ts[topic] || -1
+  s = sizes[topic] || -1
+  printf("%7u %7u %s\n", n, s, topic)
 end

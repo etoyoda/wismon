@@ -40,10 +40,11 @@ def wnm_size(wnm)
       return c['size'].to_i
     end
   end
-  0
+  nil
 end
 
 ts = Hash.new(0)
+nsizes = Hash.new(0)
 sizes = Hash.new(0)
 
 SERIES.each{|name, path|
@@ -54,11 +55,12 @@ SERIES.each{|name, path|
         json=ent.read
         wnm=JSON.parse(json)
         topic = fnam_to_topic(ent.name)
-        #ts[topic] = 0 unless ts[topic]
         ts[topic] += 1
         size = wnm_size(wnm)
-        #sizes[topic] = 0 unless sizes[topic]
-        sizes[topic] += size
+        if size
+          nsizes[topic] += 1
+          sizes[topic] += size
+        end
       }
     }
   }
@@ -66,6 +68,8 @@ SERIES.each{|name, path|
 
 ts.keys.sort.each do |topic|
   n = ts[topic] || -1
-  s = sizes[topic] || -1
-  printf("%7u %7u %s\n", n, s, topic)
+  s = sizes[topic]
+  ns = nsizes[topic]
+  avgs = s.to_f / ns.to_f * 0.001
+  printf("%7u,%11.3f,%s\n", n, avgs, topic)
 end

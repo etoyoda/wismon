@@ -59,16 +59,17 @@ for line in ARGF
   n,z,tc=line.strip.split(/,/,3)
   n=n.to_f
   z=z.to_f*n*1000.0
-  cid,dm,pol,wx,cat=tc.split(/\//,5)
-  cat='(gts)' if tc=='(gts)'
+  cid,ntyp,dpol,esd=tc.split(/\//,4)
+  esd='(gts)' if tc=='(gts)'
   cidstat[cid]+=1 if cid
-  catstat[cat]+=1 if cat
-  cat1 = if cat then cat.split(/\//,2)[0]
-    else nil end
-  cat2 = if cat then cat.split(/\//,3)[0,2].join('/')
-    else nil end
-  nstat.register(n,cat1,cat2) if cat
-  zstat.register(z,cat1,cat2) if cat
+  catstat[esd]+=1 if esd
+  if esd
+    cat1 = cat2 = nil
+    cat1 = esd.split(/\//,3)[0,2].join('/')
+    cat2 = esd.split(/\//,4)[0,3].join('/')
+    nstat.register(n,cat1,cat2)
+    zstat.register(z,cat1,cat2)
+  end
 end
 
 nstat.report("num messages")
@@ -80,6 +81,6 @@ for cid in cidstat.keys.sort
 end
 
 puts "= n topics for category"
-for cat in catstat.keys.sort
-  printf("%s\t%s\n", cat, catstat[cat])
+for esd in catstat.keys.sort
+  printf("%s\t%s\n", esd, catstat[esd])
 end

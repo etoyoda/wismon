@@ -30,6 +30,20 @@ class Stat
       n=@stat1[cat1]
       r=100.0*n/@sum
       printf "%7s\t%5.2f%%\t%s\n", format7(n), r, cat1
+      list2=@stat2.keys.select{|cat2|
+          cat2.start_with?(cat1)
+        }.sort{|a,b|
+          @stat2[b]<=>@stat2[a]
+        }
+      if list2.size>1 or list2.first!=cat1 then
+        list2.each do |cat2|
+          n=@stat2[cat2]
+          r=100.0*n/@sum
+          c=cat2[cat1.length..-1]
+          c='.' if c.empty?
+          printf "\t\t%7s\t%5.2f%%\t%s\n", format7(n), r, c
+        end
+      end
     }
   end
 
@@ -56,6 +70,9 @@ for line in ARGF
   zstat.register(z,cat1,cat2) if cat
 end
 
+nstat.report("num messages")
+zstat.report("size")
+
 puts "= n topics for centreid"
 for cid in cidstat.keys.sort
   printf("%s\t%s\n", cid, cidstat[cid])
@@ -65,6 +82,3 @@ puts "= n topics for category"
 for cat in catstat.keys.sort
   printf("%s\t%s\n", cat, catstat[cat])
 end
-
-nstat.report("num messages")
-zstat.report("size")

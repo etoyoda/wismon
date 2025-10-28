@@ -12,4 +12,5 @@ ymd=$2
 test -d $ym || mkdir $ym
 cd $ym
 ruby ${base}/wnm-topicstat.rb 2> topics.log > topics${ymd}.txt
+ruby ${base}/topicstat-ctab.rb topics$ymd.txt 2> ctab.log > ctab$ymd.txt
 exit 0

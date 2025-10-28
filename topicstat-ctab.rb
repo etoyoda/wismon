@@ -45,6 +45,7 @@ class Stat
         end
       end
     }
+    printf "%7s\t100.0%%\t(total)\n", format7(@sum)
   end
 
 end

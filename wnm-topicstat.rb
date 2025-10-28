@@ -5,8 +5,9 @@ require 'tarreader'
 require 'json'
 
 SERIES = [
- ['DevGC','/nwp/m0/jmagc[012][0-9].tar.gz'],
-# ['DevNode','/nwp/m0/devnode[012][0-9].tar.gz'],
+  ['jmagc','/nwp/m0/jmagc[012][0-9].tar.gz'],
+  ['devgc','/nwp/m0/devgc[012][0-9].tar.gz'],
+  ['devnode','/nwp/m0/devnode[012][0-9].tar.gz'],
 ]
 
 def fnam_to_topic topic
@@ -43,17 +44,40 @@ def wnm_size(wnm)
   nil
 end
 
+def gccheck(wnm,selgc)
+  return true unless selgc
+  return false unless wnm['properties']
+  r = wnm['properties']['global-cache'] == selgc
+  r
+end
+
+$selgc=nil
+$selser=nil
+$fast=nil
+for arg in ARGV
+  case arg
+  when /^-gc=/ then $selgc=$'
+  when /^\w+$/ then $selser=arg
+  when /^-fast/ then $fast=true
+  else raise "unknown option #{arg}"
+  end
+end
+
 ts = Hash.new(0)
 nsizes = Hash.new(0)
 sizes = Hash.new(0)
 
+STDERR.puts "select series #{$selser.inspect}"
+STDERR.puts "select global-cache #{$selgc.inspect}"
 SERIES.each{|name, path|
+  next if $selser and name != $selser
   Dir.glob(path).each{|gzfn|
     STDERR.puts "= #{gzfn}"
     TarReader.open(gzfn){|tar|
       tar.each_entry{|ent|
         json=ent.read
         wnm=JSON.parse(json)
+        next unless gccheck(wnm,$selgc)
         topic = fnam_to_topic(ent.name)
         ts[topic] += 1
         size = wnm_size(wnm)
@@ -63,6 +87,7 @@ SERIES.each{|name, path|
         end
       }
     }
+    break if $fast
   }
 }
 

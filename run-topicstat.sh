@@ -11,6 +11,9 @@ ym=$1
 ymd=$2
 test -d $ym || mkdir $ym
 cd $ym
-ruby ${base}/wnm-topicstat.rb 2> topics.log > topics${ymd}.txt
+ruby ${base}/wnm-topicstat.rb jmagc 2> topics.log > topics${ymd}.txt
+ruby ${base}/wnm-topicstat.rb jmagc -gc=jp-jma-global-cache 2> topicsj.log \
+ > topicsj${ymd}.txt
 ruby ${base}/topicstat-ctab.rb topics$ymd.txt 2> ctab.log > ctab$ymd.txt
+ruby ${base}/topicstat-ctab.rb topicsj$ymd.txt 2> ctabj.log > ctabj$ymd.txt
 exit 0

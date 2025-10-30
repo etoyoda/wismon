@@ -46,11 +46,26 @@ class TarSaver
     @tar = nil
     @n = nil
     @now = nil
+    clear
   end
 
-  def mkfnam
+  def mkfnam ofs=0
     @now = Time.now.utc
+    @now += ofs
     @now.strftime(@fnpat)
+  end
+
+  def clear
+    tmp = mkfnam()
+    if File.exist?(tmp) then
+      STDERR.puts "gzip -f #{tmp}"
+      system "gzip -f #{tmp}"
+    end
+    tmp = mkfnam(-3600)
+    if File.exist?(tmp) then
+      STDERR.puts "gzip -f #{tmp}"
+      system "gzip -f #{tmp}"
+    end
   end
 
   def save
@@ -58,6 +73,7 @@ class TarSaver
     if @fnam != tmp then
       if @tar then
         @tar.close
+        STDERR.puts "gzip -f #{@fnam}"
         system "gzip -f #{@fnam}"
       end
       @fnam = tmp

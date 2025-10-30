@@ -5,7 +5,8 @@ require 'tarreader'
 require 'json'
 
 SERIES = [
- ['DevGC','/nwp/m0/devgc[012][0-9].tar.gz'],
+ ['jmaGC','/nwp/m0/jmagc[012][0-9].tar.gz'],
+ #['DevGC','/nwp/m0/devgc[012][0-9].tar.gz'],
 # ['DevNode','/nwp/m0/devnode[012][0-9].tar.gz'],
 ]
 

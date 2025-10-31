@@ -16,4 +16,23 @@ ruby ${base}/wnm-topicstat.rb jmagc -gc=jp-jma-global-cache 2> topicsj.log \
  > topicsj${ymd}.txt
 ruby ${base}/topicstat-ctab.rb topics$ymd.txt 2> ctab.log > ctab$ymd.txt
 ruby ${base}/topicstat-ctab.rb topicsj$ymd.txt 2> ctabj.log > ctabj$ymd.txt
+
+cd ..
+
+prev=''
+if test -f gtshist-jmagc.txt
+then prev='-prev=gtshist-jmagc.txt'
+fi
+ruby ${base}/wnm-gtshist.rb jmagc $prev > z.gtsj.txt
+ln -f gtshist-jmagc.txt gtshist-jmagc-prev.txt
+mv -f z.gtsj.txt gtshist-jmagc.txt
+
+prev=''
+if test -f gtshist-devgc.txt
+then prev='-prev=gtshist-devgc.txt'
+fi
+ruby ${base}/wnm-gtshist.rb devgc $prev > z.gtsj.txt
+ln -f gtshist-devgc.txt gtshist-devgc-prev.txt
+mv -f z.gtsj.txt gtshist-devgc.txt
+
 exit 0

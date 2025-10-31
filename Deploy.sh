@@ -15,7 +15,8 @@ else
   sudo install -m 0644 wismon-cfg.json /usr/local/etc
 fi
 
-for p in wnmsaver.rb wnm-topicstat.rb run-topicstat.sh topicstat-ctab.rb
+for p in wnmsaver.rb wnm-topicstat.rb run-topicstat.sh topicstat-ctab.rb \
+  wnm-gtshist.rb
 do
   test -f $p
   sudo install $p /usr/local/bin/

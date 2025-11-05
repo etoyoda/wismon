@@ -56,11 +56,6 @@ class TarSaver
   end
 
   def clear
-    tmp = mkfnam()
-    if File.exist?(tmp) then
-      STDERR.puts "gzip -f #{tmp}"
-      system "gzip -f #{tmp}"
-    end
     tmp = mkfnam(-3600)
     if File.exist?(tmp) then
       STDERR.puts "gzip -f #{tmp}"

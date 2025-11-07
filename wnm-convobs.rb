@@ -4,9 +4,15 @@ require 'tarreader'
 require 'json'
 require 'base64'
 
+# for wget
 require 'net/http'
 require 'uri'
 require 'openssl'
+
+$LOAD_PATH.push('/var/www/html/2019/bufrconv')
+require 'bufrscan'
+require 'bufrdump'
+
 class WGet
 
   def initialize
@@ -32,11 +38,63 @@ class WGet
 
 end
 
+class BufrCheck
+
+  def initialize
+  end
+
+  def newbufr hdr
+  end
+
+  def find tree, fxy
+    for elem in tree
+      if elem.first==fxy
+        return elem[1]
+      elsif Array===elem.first
+        ret=find(elem.first, fxy)
+        return ret if ret
+      end
+    end
+    return nil
+  end
+
+  def wsiformat wsi1, wsi2, wsi3, wsi4
+    wsi1 = if wsi1 then format('%u', wsi1) else '/' end
+    wsi2 = if wsi2 then format('%u', wsi2) else '///' end
+    wsi3 = if wsi3 then format('%u', wsi3) else '/' end
+    wsi4 = if wsi4 then wsi4.rstrip else '/////' end
+    [wsi1, wsi2, wsi3, wsi4].join('-')
+  end
+
+  def subset tree
+    ii=find(tree,'001001')
+    iii=find(tree,'001002')
+    wsi1=find(tree,'001125')
+    wsi2=find(tree,'001126')
+    wsi3=find(tree,'001127')
+    wsi4=find(tree,'001128')
+    lat=find(tree,'005001')||find(tree,'005002')
+    lon=find(tree,'006001')||find(tree,'006002')
+    sii=if ii then sprintf('%02u', ii) else '//' end
+    siii=if iii then sprintf('%03u', ii) else '///' end
+    swsi=wsiformat(wsi1,wsi2,wsi3,wsi4)
+    printf "%2s %3s %+06.2f %+07.2f %s\n", sii, siii, lat, lon, swsi
+  end
+
+  def endbufr
+  end
+
+  def close
+  end
+
+end
+
 class App
 
   DEFPATH='/nwp/m0/jmagc[0-9][0-9].tar.gz'
 
   def initialize argv
+    @bufrdbdir='/nwp/bin'
     @files=[]
     @gcsel='jp-jma-global-cache'
     @tpsel='/(synop|temp)$'
@@ -46,6 +104,8 @@ class App
     @files.push(DEFPATH) if @files.empty?
     @tpreg=Regexp.new(@tpsel)
     @wget=WGet.new
+    @bufrdb=BufrDB.new(@bufrdbdir)
+    @dumper=BufrCheck.new
   end
 
   def fnam_to_topic topic
@@ -76,7 +136,13 @@ class App
 
   def handlemsg rec,clink,topic
     msg=getmsg(rec,clink)
-    p msg[0,4] if msg
+    unless /BUFR/===msg[0,128]
+      STDERR.puts "not BUFR #{msg[0,32].inspect} #{topic}"
+      return
+    end
+    bmsg=BUFRMsg.new(msg,0,msg.size,0)
+    @bufrdb.decode(bmsg,:direct,@dumper)
+  rescue BUFRMsg::EBADF
   end
 
   def readtar tarfnam

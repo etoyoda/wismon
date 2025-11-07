@@ -1,1 +1,3 @@
-{}
+{
+  "nwsgc": "mqtts://wis2broker.globaldata.nws.noaa.gov/cache/a/wis2/#"
+}

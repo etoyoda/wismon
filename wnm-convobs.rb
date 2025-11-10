@@ -38,11 +38,30 @@ class WGet
 
 end
 
+class Progress
+
+  def initialize out
+    @out=out
+    @btime=Time.now.utc
+    @n=0
+  end
+
+  def ping
+    @n+=1
+    return unless 1==(@n % 100)
+    t=(Time.now-@btime)
+    STDERR.printf("%6u %6.2f[s] %8.2g[msg/s]\n", @n, t, @n/t)
+  end
+
+end
+
 class BufrCheck
 
-  def initialize
+  def initialize odb
     @hdr=nil
     @topic=nil
+    @odb=odb
+    @progress=Progress.new(STDERR)
   end
 
   attr_accessor :topic
@@ -68,7 +87,7 @@ class BufrCheck
     wsi1 = if wsi1 then format('%u', wsi1) else '/' end
     wsi2 = if wsi2 then format('%u', wsi2) else '///' end
     wsi3 = if wsi3 then format('%u', wsi3) else '/' end
-    wsi4 = if wsi4 then wsi4.rstrip else '/////' end
+    wsi4 = case wsi4 when String then wsi4.rstrip when Integer then wsi4.to_s else '/////' end
     [wsi1, wsi2, wsi3, wsi4].join('-')
   end
 
@@ -83,6 +102,7 @@ class BufrCheck
   def subset tree
     cat=@hdr[:cat]
     subcat=@hdr[:subcat]
+    srtime=@hdr[:reftime].strftime('%Y%m%dT%H%M%S')
     ii=find(tree,'001001')
     iii=find(tree,'001002')
     wsi1=find(tree,'001125')
@@ -92,10 +112,15 @@ class BufrCheck
     lat=find(tree,'005001')||find(tree,'005002')||Float::NAN
     lon=find(tree,'006001')||find(tree,'006002')||Float::NAN
     swsi=wsiformat(wsi1,wsi2,wsi3,wsi4)
-    printf("%2s%3s\t%s\t%3s%3s\t%+06.2f\t%+07.2f\t%s\n",
-      utoa02(ii), utoa03(iii), swsi,
+    swsi=wsiformat(0,20000,0,ii*1000+iii) if wsi4.nil?
+    line=sprintf("%s\t%2s%3s\t%3s%3s\t%+06.2f\t%+07.2f\t%s\n",
+      srtime, utoa02(ii), utoa03(iii),
       utoa03(cat), utoa03(subcat),
       lat, lon, @topic)
+    if not @odb.include?(swsi) or @odb[swsi]<line then
+      @odb[swsi]=line
+    end
+    @progress.ping
   end
 
   def endbufr
@@ -123,7 +148,8 @@ class App
     @tpreg=Regexp.new(@tpsel)
     @wget=WGet.new
     @bufrdb=BufrDB.new(@bufrdbdir)
-    @dumper=BufrCheck.new
+    @odb=Hash.new
+    @dumper=BufrCheck.new(@odb)
   end
 
   def fnam_to_topic topic
@@ -207,6 +233,9 @@ class App
 
   def run
     run2
+    for wsi, line in @odb
+      puts([wsi,line].join("\t"))
+    end
   end
 
 end

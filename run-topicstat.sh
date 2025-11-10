@@ -37,4 +37,8 @@ ruby ${base}/wnm-gtshist.rb devgc $prev > z.gtsj.txt
 ln -f gtshist-devgc.txt gtshist-devgc-prev.txt
 mv -f z.gtsj.txt gtshist-devgc.txt
 
+time ruby ${base}/wnm-convobs.rb > z.convobs.txt 2> convobs.log
+ln -f convobs.txt convobs-prev.txt
+mv -f z.convobs.txt convobs.txt
+
 exit 0

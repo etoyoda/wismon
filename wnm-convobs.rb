@@ -74,7 +74,7 @@ class Progress
     @n+=1
     return unless (@n % 100)==1
     t=(Time.now-@btime)
-    STDERR.printf("%6u %6.2f[s] %8.3g[msg/s]\n", @n, t, @n/t)
+    STDERR.printf("%6u[msgs] %6.2f[s] %8.3g[msg/s]\n", @n, t, @n/t)
   end
 
 end
@@ -176,6 +176,7 @@ class App
     @odb=Hash.new
     @dumper=BufrCheck.new(@odb)
     @mutex=Mutex.new
+    @errs=Hash.new(0)
   end
 
   def fnam_to_topic topic
@@ -214,7 +215,7 @@ class App
         end
         json=ent.read
         if json.nil?
-          STDERR.puts "nil tar entry - #{ent.name}"
+          @errs["nil tar entry - #{ent.name}"]+=1
           next
         end
         rec=JSON.parse(json)
@@ -226,7 +227,7 @@ class App
           clink=link if /^(canonical|update)$/===link['rel']
         end
         unless clink
-          STDERR.puts "missing canonical link - #{ent.name}"
+          @errs["missing canonical link - #{ent.name}"]+=1
           next
         end
         handlemsg(rec,clink,topic)
@@ -258,10 +259,10 @@ class App
             @bufrdb.decode(bmsg,:direct,@dumper)
           end
         else
-          STDERR.puts "not BUFR #{msg[0,50].inspect}"
+          @errs["not BUFR #{msg[0,50].inspect}"]+=1
         end
       rescue BUFRMsg::EBADF, BUFRMsg::ENOSYS => e
-        STDERR.puts "#{e} - #{topic}"
+        @errs["#{e} - #{topic}"]+=1
       end
       break if @wget.done
     end
@@ -288,6 +289,9 @@ class App
     compile
     for wsi, line in @odb
       puts([wsi,line].join("\t"))
+    end
+    for msg, n in @errs
+      STDERR.printf("%u: %s\n", n, msg)
     end
   end
 

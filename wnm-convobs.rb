@@ -41,9 +41,14 @@ end
 class BufrCheck
 
   def initialize
+    @hdr=nil
+    @topic=nil
   end
 
+  attr_accessor :topic
+
   def newbufr hdr
+    @hdr=hdr
   end
 
   def find tree, fxy
@@ -58,6 +63,7 @@ class BufrCheck
     return nil
   end
 
+  # practical max length = 1+1+5+1+5+1+16=30
   def wsiformat wsi1, wsi2, wsi3, wsi4
     wsi1 = if wsi1 then format('%u', wsi1) else '/' end
     wsi2 = if wsi2 then format('%u', wsi2) else '///' end
@@ -66,22 +72,34 @@ class BufrCheck
     [wsi1, wsi2, wsi3, wsi4].join('-')
   end
 
+  def utoa02 i
+    if i then format('%02u', i) else '//' end
+  end
+
+  def utoa03 i
+    if i then format('%03u', i) else '///' end
+  end
+
   def subset tree
+    cat=@hdr[:cat]
+    subcat=@hdr[:subcat]
     ii=find(tree,'001001')
     iii=find(tree,'001002')
     wsi1=find(tree,'001125')
     wsi2=find(tree,'001126')
     wsi3=find(tree,'001127')
     wsi4=find(tree,'001128')
-    lat=find(tree,'005001')||find(tree,'005002')
-    lon=find(tree,'006001')||find(tree,'006002')
-    sii=if ii then sprintf('%02u', ii) else '//' end
-    siii=if iii then sprintf('%03u', ii) else '///' end
+    lat=find(tree,'005001')||find(tree,'005002')||Float::NAN
+    lon=find(tree,'006001')||find(tree,'006002')||Float::NAN
     swsi=wsiformat(wsi1,wsi2,wsi3,wsi4)
-    printf "%2s %3s %+06.2f %+07.2f %s\n", sii, siii, lat, lon, swsi
+    printf("%2s%3s\t%s\t%3s%3s\t%+06.2f\t%+07.2f\t%s\n",
+      utoa02(ii), utoa03(iii), swsi,
+      utoa03(cat), utoa03(subcat),
+      lat, lon, @topic)
   end
 
   def endbufr
+    @hdr=nil
   end
 
   def close
@@ -134,12 +152,13 @@ class App
     return @wget.wget(clink["href"])
   end
 
-  def handlemsg rec, clink
+  def handlemsg rec, clink, topic
     msg=getmsg(rec,clink)
     unless /BUFR/===msg[0,128]
       raise BUFRMsg::EBADF, "not BUFR #{msg[0,32].inspect}"
     end
     bmsg=BUFRMsg.new(msg,0,msg.size,0)
+    @dumper.topic=topic
     @bufrdb.decode(bmsg,:direct,@dumper)
   end
 
@@ -168,7 +187,7 @@ class App
           next
         end
         begin
-          handlemsg(rec,clink)
+          handlemsg(rec,clink,topic)
         rescue BUFRMsg::EBADF, BUFRMsg::ENOSYS => e
           STDERR.puts "#{e} - #{ent.name}"
         end

@@ -248,7 +248,7 @@ class App
     loop do
       topic,msg=@wget.wget2(id)
       begin
-        if msg.nil? then
+        if msg.nil? or 'NIL'==msg then
           sleep 0.1
         elsif /BUFR/===msg[0,128]
           bmsg=BUFRMsg.new(msg,0,msg.size,0)

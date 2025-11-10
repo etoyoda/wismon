@@ -248,10 +248,11 @@ class App
     loop do
       topic,msg=@wget.wget2(id)
       begin
-        if msg.nil? or 'NIL'==msg or /\r\r\nNIL\r\r\n/===msg then
+        if msg.nil? or 'NIL'==msg or /\r\r\nNIL\r\r\n/===msg[0,128] then
           sleep 0.1
         elsif /BUFR/===msg[0,128]
-          bmsg=BUFRMsg.new(msg,0,msg.size,0)
+          ofs=msg.index('BUFR')
+          bmsg=BUFRMsg.new(msg,ofs,msg.size-ofs,0)
           @mutex.synchronize do
             @dumper.topic=topic
             @bufrdb.decode(bmsg,:direct,@dumper)

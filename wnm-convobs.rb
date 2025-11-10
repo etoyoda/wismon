@@ -248,7 +248,7 @@ class App
     loop do
       topic,msg=@wget.wget2(id)
       begin
-        if msg.nil? or 'NIL'==msg then
+        if msg.nil? or 'NIL'==msg or /\r\r\nNIL\r\r\n/===msg then
           sleep 0.1
         elsif /BUFR/===msg[0,128]
           bmsg=BUFRMsg.new(msg,0,msg.size,0)
@@ -257,7 +257,7 @@ class App
             @bufrdb.decode(bmsg,:direct,@dumper)
           end
         else
-          STDERR.puts "not BUFR #{msg[0,32].inspect}"
+          STDERR.puts "not BUFR #{msg[0,50].inspect}"
         end
       rescue BUFRMsg::EBADF, BUFRMsg::ENOSYS => e
         STDERR.puts "#{e} - #{topic}"

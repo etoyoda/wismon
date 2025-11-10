@@ -24,6 +24,10 @@ class WGet
     @http.request(uri).body
   end
 
+  def shutdown
+    @http.shutdown
+  end
+
 end
 
 class Progress
@@ -217,6 +221,8 @@ class App
     }
   rescue Interrupt
     STDERR.puts "Interrupt"
+  ensure
+    @wget.shutdown
   end
 
   def run

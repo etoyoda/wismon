@@ -17,11 +17,43 @@ class WGet
 
   def initialize
     @http=Net::HTTP::Persistent.new(name: 'WIS-downloader')
+    @q=Queue.new
+    @done=false
   end
 
-  def wget suri
+  attr_reader :done
+
+  def done!
+    @done=true
+  end
+
+  def qdirect topic, data
+    @q << [topic, data]
+  end
+
+  def quri topic, suri
     uri=URI.parse(suri)
-    @http.request(uri).body
+    @q << [topic, uri]
+  end
+
+  def wget2 id
+    topic=msg=nil
+    topic,uri=@q.pop(true) rescue nil
+    if String===uri
+      msg=uri
+    elsif URI===uri
+      begin
+        res=@http.request(uri)
+        if res.code.to_i==200
+          msg=res.body
+        else
+          STDERR.puts "#{res.code} - #{uri.path}"
+        end
+      rescue=>e
+        STDERR.puts "#{e.class} #{e.message} - #{uri.path}"
+      end
+    end
+    [topic,msg]
   end
 
   def shutdown
@@ -40,9 +72,9 @@ class Progress
 
   def ping
     @n+=1
-    return unless 1==(@n % 100)
+    return unless (@n % 100)==1
     t=(Time.now-@btime)
-    STDERR.printf("%6u %6.2f[s] %8.2g[msg/s]\n", @n, t, @n/t)
+    STDERR.printf("%6u %6.2f[s] %8.3g[msg/s]\n", @n, t, @n/t)
   end
 
 end
@@ -126,6 +158,7 @@ end
 
 class App
 
+  THREADS=20
   DEFPATH='/nwp/m0/jmagc[0-9][0-9].tar.gz'
 
   def initialize argv
@@ -142,6 +175,7 @@ class App
     @bufrdb=BufrDB.new(@bufrdbdir)
     @odb=Hash.new
     @dumper=BufrCheck.new(@odb)
+    @mutex=Mutex.new
   end
 
   def fnam_to_topic topic
@@ -160,24 +194,15 @@ class App
     topic
   end
 
-  def getmsg rec, clink
+  def handlemsg rec, clink, topic
     if rec["content"] then
       case rec["content"]["encoding"]
       when "base64"
-        return Base64.decode64(rec["content"]["value"])
+        @wget.qdirect(topic, Base64.decode64(rec["content"]["value"]))
+        return
       end
     end
-    return @wget.wget(clink["href"])
-  end
-
-  def handlemsg rec, clink, topic
-    msg=getmsg(rec,clink)
-    unless /BUFR/===msg[0,128]
-      raise BUFRMsg::EBADF, "not BUFR #{msg[0,32].inspect}"
-    end
-    bmsg=BUFRMsg.new(msg,0,msg.size,0)
-    @dumper.topic=topic
-    @bufrdb.decode(bmsg,:direct,@dumper)
+    @wget.quri(topic, clink["href"])
   end
 
   def readtar tarfnam
@@ -204,21 +229,54 @@ class App
           STDERR.puts "missing canonical link - #{ent.name}"
           next
         end
-        begin
-          handlemsg(rec,clink,topic)
-        rescue BUFRMsg::EBADF, BUFRMsg::ENOSYS => e
-          STDERR.puts "#{e} - #{ent.name}"
-        end
+        handlemsg(rec,clink,topic)
       }
     }
   end
 
-  def run2
+  # scan tar.gz files and put URLs into @wget queue
+  def phase1
     @files.each{|pat|
       Dir.glob(pat).each{|tarfnam|
         readtar(tarfnam)
       }
     }
+    @wget.done!
+  end
+
+  def phase2 id
+    loop do
+      topic,msg=@wget.wget2(id)
+      begin
+        if msg.nil? then
+          sleep 0.1
+        elsif /BUFR/===msg[0,128]
+          bmsg=BUFRMsg.new(msg,0,msg.size,0)
+          @mutex.synchronize do
+            @dumper.topic=topic
+            @bufrdb.decode(bmsg,:direct,@dumper)
+          end
+        else
+          STDERR.puts "not BUFR #{msg[0,32].inspect}"
+        end
+      rescue BUFRMsg::EBADF, BUFRMsg::ENOSYS => e
+        STDERR.puts "#{e} - #{topic}"
+      end
+      break if @wget.done
+    end
+  end
+
+  def compile
+    producer=Thread.new {
+      phase1
+    }
+    workers=THREADS.times.map do |id|
+      Thread.new do
+        phase2(id)
+      end
+    end
+    producer.join
+    workers.each(&:join)
   rescue Interrupt
     STDERR.puts "Interrupt"
   ensure
@@ -226,7 +284,7 @@ class App
   end
 
   def run
-    run2
+    compile
     for wsi, line in @odb
       puts([wsi,line].join("\t"))
     end

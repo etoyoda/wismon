@@ -134,15 +134,13 @@ class App
     return @wget.wget(clink["href"])
   end
 
-  def handlemsg rec,clink,topic
+  def handlemsg rec, clink
     msg=getmsg(rec,clink)
     unless /BUFR/===msg[0,128]
-      STDERR.puts "not BUFR #{msg[0,32].inspect} #{topic}"
-      return
+      raise BUFRMsg::EBADF, "not BUFR #{msg[0,32].inspect}"
     end
     bmsg=BUFRMsg.new(msg,0,msg.size,0)
     @bufrdb.decode(bmsg,:direct,@dumper)
-  rescue BUFRMsg::EBADF
   end
 
   def readtar tarfnam
@@ -169,7 +167,11 @@ class App
           STDERR.puts "missing canonical link - #{ent.name}"
           next
         end
-        handlemsg(rec,clink,topic)
+        begin
+          handlemsg(rec,clink)
+        rescue BUFRMsg::EBADF, BUFRMsg::ENOSYS => e
+          STDERR.puts "#{e} - #{ent.name}"
+        end
       }
     }
   end

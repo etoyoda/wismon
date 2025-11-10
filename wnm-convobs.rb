@@ -5,9 +5,9 @@ require 'json'
 require 'base64'
 
 # for wget
-require 'net/http'
+require 'net/http/persistent'
 require 'uri'
-require 'openssl'
+#require 'openssl'
 
 $LOAD_PATH.push('/var/www/html/2019/bufrconv')
 require 'bufrscan'
@@ -16,24 +16,12 @@ require 'bufrdump'
 class WGet
 
   def initialize
-    @host=@port=@http=nil
+    @http=Net::HTTP::Persistent.new(name: 'WIS-downloader')
   end
 
-  def connect host, port
-    return true if host==@host and port==@port
-    STDERR.puts "connecting #{host}:#{port}"
-    @host,@port,@http=host,port,Net::HTTP.new(host,port)
-    @http.use_ssl=true
-    @http.verify_mode=OpenSSL::SSL::VERIFY_PEER
-  end
-
-  def wget uri
-    uri=URI.parse(uri)
-    connect(uri.host,uri.port)
-    req=Net::HTTP::Get.new(uri.request_uri)
-    resp=@http.request(req)
-    raise resp.code unless resp.code != 200
-    resp.body
+  def wget suri
+    uri=URI.parse(suri)
+    @http.request(uri).body
   end
 
 end

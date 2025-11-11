@@ -127,6 +127,7 @@ class BufrCheck
     cat=@hdr[:cat]
     subcat=@hdr[:subcat]
     srtime=@hdr[:reftime].strftime('%Y%m%dT%H%M%S')
+    descs=@hdr[:descs]
     ii=find(tree,'001001')
     iii=find(tree,'001002')
     wsi1=find(tree,'001125')
@@ -141,7 +142,7 @@ class BufrCheck
       swsi=wsiformat(0,issuer,0,ii*1000+iii).sub(/ /,'?')
     end
     row=[srtime,utoa02(ii)+utoa03(iii),utoa03(cat)+utoa03(subcat),
-      format('%+06.2f',lat),format('%+07.2f',lon),@topic]
+      format('%+06.2f',lat),format('%+07.2f',lon),@topic,descs]
     @progress.ping
     if not @odb.include?(swsi) or @odb[swsi][0]<row[0] then
       @odb[swsi]=row
@@ -292,6 +293,7 @@ class App
       row=@odb[wsi]
       puts([wsi,row].flatten.join("\t"))
     end
+    STDOUT.flush
     for msg, n in @errs
       STDERR.printf("%u: %s\n", n, msg)
     end

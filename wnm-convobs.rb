@@ -136,6 +136,11 @@ class BufrCheck
     wsi4=find(tree,'001128')
     lat=find(tree,'005001')||find(tree,'005002')||Float::NAN
     lon=find(tree,'006001')||find(tree,'006002')||Float::NAN
+    # russia hack
+    if /(kz-|ru-|by-)/===@topic then
+      lat *= 0.00001 if lat.abs > 1000.0
+      lon *= 0.00001 if lon.abs > 1000.0
+    end
     swsi=wsiformat(wsi1,wsi2,wsi3,wsi4)
     if wsi4.nil? then
       issuer=case cat when 2 then 20001 else 20000 end

@@ -136,15 +136,15 @@ class BufrCheck
     lat=find(tree,'005001')||find(tree,'005002')||Float::NAN
     lon=find(tree,'006001')||find(tree,'006002')||Float::NAN
     swsi=wsiformat(wsi1,wsi2,wsi3,wsi4)
-    swsi=wsiformat(0,20000,0,ii*1000+iii) if wsi4.nil?
-    line=sprintf("%s\t%2s%3s\t%3s%3s\t%+06.2f\t%+07.2f\t%s\n",
-      srtime, utoa02(ii), utoa03(iii),
-      utoa03(cat), utoa03(subcat),
-      lat, lon, @topic)
-    if not @odb.include?(swsi) or @odb[swsi]<line then
-      @odb[swsi]=line
+    if wsi4.nil? then
+      swsi=wsiformat(0,20000,0,ii*1000+iii).sub(/ /,'?')
     end
+    row=[srtime,utoa02(ii)+utoa03(iii),utoa03(cat)+utoa03(subcat),
+      format('%+06.2f',lat),format('%+07.2f',lon),@topic]
     @progress.ping
+    if not @odb.include?(swsi) or @odb[swsi][0]<row[0] then
+      @odb[swsi]=row
+    end
   end
 
   def endbufr
@@ -287,8 +287,9 @@ class App
 
   def run
     compile
-    for wsi, line in @odb
-      puts([wsi,line].join("\t"))
+    for wsi in @odb.keys.sort
+      row=@odb[wsi]
+      puts([wsi,row].flatten.join("\t"))
     end
     for msg, n in @errs
       STDERR.printf("%u: %s\n", n, msg)

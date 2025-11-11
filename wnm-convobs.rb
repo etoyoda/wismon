@@ -137,7 +137,8 @@ class BufrCheck
     lon=find(tree,'006001')||find(tree,'006002')||Float::NAN
     swsi=wsiformat(wsi1,wsi2,wsi3,wsi4)
     if wsi4.nil? then
-      swsi=wsiformat(0,20000,0,ii*1000+iii).sub(/ /,'?')
+      issuer=case cat when 2 then 20001 else 20000 end
+      swsi=wsiformat(0,issuer,0,ii*1000+iii).sub(/ /,'?')
     end
     row=[srtime,utoa02(ii)+utoa03(iii),utoa03(cat)+utoa03(subcat),
       format('%+06.2f',lat),format('%+07.2f',lon),@topic]

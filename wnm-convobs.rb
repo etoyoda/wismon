@@ -142,7 +142,7 @@ class BufrCheck
       lon *= 0.00001 if lon.abs > 1000.0
     end
     swsi=wsiformat(wsi1,wsi2,wsi3,wsi4)
-    if wsi4.nil? then
+    if wsi4.nil? and ii and iii then
       issuer=case cat when 2 then 20001 else 20000 end
       swsi=wsiformat(0,issuer,0,ii*1000+iii).sub(/ /,'?')
     end
@@ -269,7 +269,9 @@ class App
           @errs["not BUFR #{msg[0,50].inspect}"]+=1
         end
       rescue BUFRMsg::EBADF, BUFRMsg::ENOSYS => e
-        @errs["#{e} - #{topic}"]+=1
+        emsg=e.to_s
+        emsg.sub!(/ES \d+ mismatch msg end \d+/, 'ES * mismatch msg end *')
+        @errs["#{emsg} - #{topic}"]+=1
       end
       break if @wget.done
     end

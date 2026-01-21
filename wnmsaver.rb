@@ -92,7 +92,7 @@ MAXFNAM=85
 ss = TarSaver.new(fnpat)
 begin
   MQTT::Client.connect($cfg) do |c|
-    STDERR.puts "connected #{$cfg[:host]}"
+    STDERR.puts "connected #{$cfg[:host]}:#{$cfg[:port]}"
     for topic in $topics
       c.subscribe(topic)
       STDERR.puts "subscribed #{topic}"

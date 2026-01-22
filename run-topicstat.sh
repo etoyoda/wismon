@@ -41,4 +41,34 @@ time ruby ${base}/wnm-convobs.rb > z.convobs.txt 2> convobs.log
 ln -f convobs.txt convobs-prev.txt
 mv -f z.convobs.txt convobs.txt
 
+CONVOBS=convobs.txt
+if test -x /usr/bin/gmt
+then
+  YPS=y.convobs.ps
+  YTXT=ytmp.txt
+  gmt set \
+  MAP_FRAME_TYPE plain \
+  MAP_TICK_LENGTH_PRIMARY 0.1c \
+  FONT_ANNOT_PRIMARY 6p
+  REGION="-R-180/180/-90/90"
+  PROJ="-JQ0/5i"
+  gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
+  awk '($7 ~ /synop/){print $6, $5}' $CONVOBS > $YTXT
+  gmt psxy $REGION $PROJ -Sc2p -Gorange -W0.25p -O -K < $YTXT >> $YPS
+  awk '($7 ~ /temp/){print $6, $5}' $CONVOBS > $YTXT
+  gmt psxy $REGION $PROJ -Sx3p -W0.5p,blue -O -K < $YTXT >> $YPS
+  DATE=$(awk '{print $2}' $CONVOBS | sort -r | head -10 | tail -1)
+  gmt pslegend $REGION $PROJ -Dg-180/-45+w1.1i+jTL+o0.1i -F+gwhite+p0.25p+r3p -O >> $YPS <<ENDLEGEND
+H 6p,Helvetica-Bold black WIS2 Data Coverage
+G 0p
+H 6p,Helvetica-Bold black $DATE
+G 1p
+S 0.05i c 2p orange 0.25p 0.2i SYNOP
+S 0.05i x 3p blue 0.5p 0.2i TEMP
+ENDLEGEND
+  gmt psconvert $YPS -A+m0.2c -Tg -P
+  rm -f $YPS $YTXT gmt.conf gmt.history
+  mv -f y.convobs.png convobs.png
+fi
+
 exit 0

@@ -16,8 +16,9 @@ ruby ${base}/topicstat-ctab.rb topics${ymd}.txt 2> ctab.log > ctab${ymd}.txt
 ruby ${base}/wnm-topicstat.rb jmagc -gc=jp-jma-global-cache 2> topicsj.log \
  > topicsj${ymd}.txt
 ruby ${base}/topicstat-ctab.rb topicsj${ymd}.txt 2> ctabj.log > ctabj${ymd}.txt
-ruby ${base}/wnm-topicstat.rb devgc 2> topicsd.log > topicsd${ymd}.txt
-ruby ${base}/topicstat-ctab.rb topicsd${ymd}.txt 2> ctabd.log > ctabd${ymd}.txt
+#D --- 2026-01-27 wisdev MQTT broker shut down
+#D ruby ${base}/wnm-topicstat.rb devgc 2> topicsd.log > topicsd${ymd}.txt
+#D ruby ${base}/topicstat-ctab.rb topicsd${ymd}.txt 2> ctabd.log > ctabd${ymd}.txt
 
 cd /nwp/m1
 
@@ -29,13 +30,13 @@ ruby ${base}/wnm-gtshist.rb jmagc $prev > z.gtsj.txt
 ln -f gtshist-jmagc.txt gtshist-jmagc-prev.txt
 mv -f z.gtsj.txt gtshist-jmagc.txt
 
-prev=''
-if test -f gtshist-devgc.txt
-then prev='-prev=gtshist-devgc.txt'
-fi
-ruby ${base}/wnm-gtshist.rb devgc $prev > z.gtsj.txt
-ln -f gtshist-devgc.txt gtshist-devgc-prev.txt
-mv -f z.gtsj.txt gtshist-devgc.txt
+#D prev=''
+#D if test -f gtshist-devgc.txt
+#D then prev='-prev=gtshist-devgc.txt'
+#D fi
+#D ruby ${base}/wnm-gtshist.rb devgc $prev > z.gtsj.txt
+#D ln -f gtshist-devgc.txt gtshist-devgc-prev.txt
+#D mv -f z.gtsj.txt gtshist-devgc.txt
 
 time ruby ${base}/wnm-convobs.rb > z.convobs.txt 2> convobs.log
 ln -f convobs.txt convobs-prev.txt

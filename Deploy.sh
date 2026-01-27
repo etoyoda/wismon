@@ -1,11 +1,13 @@
 #!/usr/bin/sh
 
 set -vxe
-for u in wismon[123].service
+for u in wismon[34].service
 do
   test -f $u
   sudo install -m 0644 $u /etc/systemd/system/$u
 done
+# decommissioned
+rm -f /etc/systemd/system/wismon[12].service
 
 test -f wismon-cfg.json
 if test -f /usr/local/etc/wismon-cfg.json

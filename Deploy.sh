@@ -46,6 +46,9 @@ do
 done
 
 test -d /nwp/m0 || sudo install -d -o nwp -g nwp /nwp/m0
+cnf=/etc/apache2/conf-available/nwp.conf
+test -f $cnf || sudo install -m 0644 apache-nwp.conf $cnf
+sudo a2enconf nwp
 sudo install -m 0444 readme-datadir.txt /nwp/m0/README.txt
 
 #test -f mdtopic.gdbm || false

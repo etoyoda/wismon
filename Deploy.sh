@@ -1,6 +1,27 @@
 #!/usr/bin/sh
 
 set -vxe
+
+# グループ作成
+if ! getent group nwp > /dev/null; then
+    sudo groupadd --gid 2000 nwp
+fi
+
+# ユーザー作成（既に存在する場合は重要な設定だけ修正）
+if ! id nwp > /dev/null 2>&1; then
+    sudo useradd --uid 2000 \
+             --gid nwp \
+             --groups adm \
+             --shell /bin/false \
+             --create-home \
+             --comment "nwp application user" \
+             nwp
+else
+    # 既存ユーザーの修正
+    sudo usermod --uid 2000 --gid nwp --shell /bin/false nwp
+    sudo usermod -aG adm nwp 2>/dev/null || true   # 既にadmに入っていてもエラーにならない
+fi
+
 for u in wismon[34].service
 do
   test -f $u
@@ -27,10 +48,11 @@ done
 test -d /nwp/m0 || sudo install -d -o nwp -g nwp /nwp/m0
 sudo install -m 0444 readme-datadir.txt /nwp/m0/README.txt
 
-test -f mdtopic.gdbm || false
-if test ! -f /nwp/m0/mdtopic.gdbm
-then
-  sudo install -m 0444 mdtopic.gdbm /nwp/m0/
-fi
+#test -f mdtopic.gdbm || false
+#if test ! -f /nwp/m0/mdtopic.gdbm
+#then
+#  sudo install -m 0444 mdtopic.gdbm /nwp/m0/
+#fi
 
 test -d /nwp/m1 || sudo install -d -o nwp -g nwp /nwp/m1
+sudo -u nwp touch /nwp/m1/gtshist-jmagc.txt

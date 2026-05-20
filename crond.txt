@@ -1,0 +1,1 @@
+03 09 *  *  *  nwp bash /usr/local/bin/run-topicstat.sh

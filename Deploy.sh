@@ -59,3 +59,5 @@ sudo install -m 0444 readme-datadir.txt /nwp/m0/README.txt
 
 test -d /nwp/m1 || sudo install -d -o nwp -g nwp /nwp/m1
 sudo -u nwp touch /nwp/m1/gtshist-jmagc.txt
+
+sudo install -m 0644 crond.txt /etc/cron.d/wismon

@@ -39,7 +39,8 @@ mv -f z.gtsj.txt gtshist-jmagc.txt
 #D mv -f z.gtsj.txt gtshist-devgc.txt
 
 time ruby ${base}/wnm-convobs.rb > z.convobs.txt 2> convobs.log
-ln -f convobs.txt convobs-prev.txt
+# fails for the first time run, and that is ignored by ||: 
+ln -f convobs.txt convobs-prev.txt || :
 mv -f z.convobs.txt convobs.txt
 
 cd /nwp/m1
@@ -58,9 +59,9 @@ then
   # DATE=$(awk '{print $2}' $CONVOBS | sort -r | head -10 | tail -1)
   DATE=$(TZ=UTC+0 date +%Y%m%dT0000 --date '24 hours ago')
   gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
-  awk '($2 >= "'${DATE}'" && $7 ~ /synop/){print $6, $5}' $CONVOBS > $YTXT
+  awk '($2 >= "'${DATE}'" && $7 ~ /synop/ && $6==$6+0 && $5==$5+0){print $6, $5}' $CONVOBS > $YTXT
   gmt psxy $REGION $PROJ -Sc2p -Gorange -W0.25p -O -K < $YTXT >> $YPS
-  awk '($2 >= "'${DATE}'" && $7 ~ /temp/){print $6, $5}' $CONVOBS > $YTXT
+  awk '($2 >= "'${DATE}'" && $7 ~ /temp/ && $6==$6+0 && $5==$5+0){print $6, $5}' $CONVOBS > $YTXT
   gmt psxy $REGION $PROJ -Sx3p -W0.5p,blue -O -K < $YTXT >> $YPS
   gmt pslegend $REGION $PROJ -Dg-180/-45+w1.1i+jTL+o0.1i -F+gwhite+p0.25p+r3p -O >> $YPS <<ENDLEGEND
 H 6p,Helvetica-Bold black WIS2 Data Coverage

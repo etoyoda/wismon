@@ -50,6 +50,7 @@ if test -x /usr/bin/gmt
 then
   YPS=y.convobs.ps
   YTXT=ytmp.txt
+  YTXT2=ytmp2.txt
   gmt set \
   MAP_FRAME_TYPE plain \
   MAP_TICK_LENGTH_PRIMARY 0.1c \
@@ -61,8 +62,8 @@ then
   gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
   awk '($2 >= "'${DATE}'" && $7 ~ /synop/ && $6==$6+0 && $5==$5+0){print $6, $5}' $CONVOBS > $YTXT
   gmt psxy $REGION $PROJ -Sc2p -Gorange -W0.25p -O -K < $YTXT >> $YPS
-  awk '($2 >= "'${DATE}'" && $7 ~ /temp/ && $6==$6+0 && $5==$5+0){print $6, $5}' $CONVOBS > $YTXT
-  gmt psxy $REGION $PROJ -Sx3p -W0.5p,blue -O -K < $YTXT >> $YPS
+  awk '($2 >= "'${DATE}'" && $7 ~ /temp/ && $6==$6+0 && $5==$5+0){print $6, $5}' $CONVOBS > $YTXT2
+  gmt psxy $REGION $PROJ -Sx3p -W0.5p,blue -O -K < $YTXT2 >> $YPS
   gmt pslegend $REGION $PROJ -Dg-180/-45+w1.1i+jTL+o0.1i -F+gwhite+p0.25p+r3p -O >> $YPS <<ENDLEGEND
 H 6p,Helvetica-Bold black WIS2 Data Coverage
 G 0p
@@ -72,7 +73,7 @@ S 0.05i c 2p orange 0.25p 0.2i SYNOP
 S 0.05i x 3p blue 0.5p 0.2i TEMP
 ENDLEGEND
   gmt psconvert $YPS -A+m0.2c -Tg -P
-  rm -f $YPS $YTXT gmt.conf gmt.history
+  rm -f $YPS $YTXT $YTXT2 gmt.conf gmt.history
   mv -f y.convobs.png convobs.png
 fi
 

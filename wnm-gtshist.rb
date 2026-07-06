@@ -44,7 +44,7 @@ class GTSHist
   end
 
   def loadprev fnam
-    STDERR.puts "loadprev #{fnam}"
+    STDERR.puts "loadprev #{fnam}" if $VERBOSE
     File.open(fnam){|fp|
       for line in fp
         row=line.chomp.split(/,/)
@@ -72,13 +72,15 @@ class GTSHist
 
 end
 
+$VERBOSE=true if STDERR.tty?
+
 gh=GTSHist.new
 gh.loadprev($prev) if $prev
-STDERR.puts "select series #{$selser.inspect}"
+STDERR.puts "select series #{$selser.inspect}" if $VERBOSE
 SERIES.each{|name, path|
   next if $selser and name != $selser
   Dir.glob(path).each{|gzfn|
-    STDERR.puts "= #{gzfn}"
+    STDERR.puts "= #{gzfn}" if $VERBOSE
     TarReader.open(gzfn){|tar|
       tar.each_entry{|ent|
         topic = fnam_to_topic(ent.name)

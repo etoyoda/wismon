@@ -66,14 +66,18 @@ ENDLEGEND
   mv -f y.convobs.png convobs.png
 fi
 
-user=$(whoami)
-{
-  echo "From: $user"
-  echo "To: $user"
-  echo "Subject: run-topicstat.sh $ymd"
-  echo ""
-  echo "wismon updated topic statistics for $ymd."
-  echo "https://toyoda-eizi.net/nwp/m1"
-} | /usr/sbin/sendmail -t
+if [ -f /nwp/bin/send_png_mail.rb ] && [ -f convobs.png ]; then
+  ruby /nwp/bin/send_png_mail.rb convobs.png
+else
+  user=$(whoami)
+  {
+    echo "From: $user"
+    echo "To: $user"
+    echo "Subject: run-topicstat.sh $ymd"
+    echo ""
+    echo "wismon updated topic statistics for $ymd."
+    echo "https://toyoda-eizi.net/nwp/m1"
+  } | /usr/sbin/sendmail -t
+fi
 
 exit 0

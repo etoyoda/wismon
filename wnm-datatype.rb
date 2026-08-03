@@ -39,64 +39,29 @@ class WGet
 end
 
 SERIES = [
- ['DevGC','/nwp/m0/devgc[012][0-9].tar.gz'],
-# ['DevNode','/nwp/m0/devnode[012][0-9].tar.gz'],
+ ['DevGC','/nwp/m0/jmagc[012][0-9].tar.gz'],
 ]
 
-TOKYO = /(wisdev\.kishou\.go\.jp)/
+TOKYO = /(global-cache-of-japan\.s3\.ap-northeast-1\.amazonaws\.com)/
 
-gdbm = GDBM.new('/nwp/m0/mdtopic.gdbm', 0, GDBM::READER)
+$c=0
 
-def guess_topic rec, gdbm
-  mdid = rec['properties']['metadata_id']
-  topic = if mdid then gdbm[mdid] else nil end
-  if topic.nil? then
-    case mdid
-    when /^urn:wmo:md:([-\w]+):core\.surface-based-observations\.synop$/
-      topic = "dummy/a/wis2/#$1/data/core/weather/surface-based-observations/synop"
-    when /^urn:wmo:md:([-\w]+):upperair-weather-observations:([-\w]+)$/
-      topic = "dummy/a/wis2/#$1/data/core/weather/surface-based-observations/#$2"
-    when /^urn:wmo:md:([-\w]+):surface-weather-observations(:synop)?$/
-      topic = "dummy/a/wis2/#$1/data/core/weather/surface-based-observations/synop"
-    when /^urn:wmo:md:([-\w]+):surface-based-observations\.synop$/
-      topic = "dummy/a/wis2/#$1/data/core/weather/surface-based-observations/synop"
-    when /^urn:wmo:md:([-\w]+):surface-based-observations:temp$/
-      topic = "dummy/a/wis2/#$1/data/core/weather/surface-based-observations/temp"
-    when /^urn:wmo:md:([-\w]+):observations\.surface\.synop-bufr$/
-      topic = "dummy/a/wis2/#$1/data/core/weather/surface-based-observations/synop"
-    when /^urn:wmo:md:([-\w]+):data\.core\.weather\.surface-based-observations\.synop$/
-      topic = "dummy/a/wis2/#$1/data/core/weather/surface-based-observations/synop"
-    when /^urn:wmo:md:([-\w]+):synop-dataset-surface-observations$/
-      topic = "dummy/a/wis2/#$1/data/core/weather/surface-based-observations/synop"
-    when /^urn:x-wmo:md:int-ecmwf:open-data:\d+:\d\dz:0p25:\w\w:\d+h$/
-      topic = "dummy/a/wis2/int-ecmwf/data/core/weather/prediction/forecast"
-    end
-  end
-  if topic.nil? then
-    case rec['properties']['data_id']
-    when /^([-\w]+)\/metadata\/urn:wmo:md/
-      topic = '(metadata)'
-    when /^wis2\/\w+-\w+-gts-to-wis2\//
-      topic = '(gts-gw)'
-    when /^weather\/surface-based-observations\/(\w+)\/A_[A-Z]{4}\d\d(\w{4})/
-      topic = "(gts #$2)"
-    when /^weather\/surface-based-observations\/(\w+)\/A_[A-Z]{4}\d\d(\w{4})/
-    when /^origin\/a\/wis2\/([-\w]+)\/data\/(\w+)\/([-\w]+)\/([-\w]+)\/([-\w]+)/
-      topic = "fake/a/wis2/#$1/data/#$2/#$3/#$4/#$5"
-    when /^([-\w]+)\/data\/(core|recommended)\/(weather)\/([-\w]+)\/([-\w]+)/
-      topic = "fake/a/wis2/#$1/data/#$2/#$3/#$4/#$5"
-    end
-  end
-  topic
+def counter
+  printf "%06u\n", $c if ($c % 100).zero?
+  $c+=1
 end
 
-#$bufrdb=BUFRDB.new('/nwp/bin')
 
-def bufrscan data
+def bufrtest data, ctr, stype, fnam
   msg=BUFRMsg.new(data,0,data.size,0)
-  "BUFR(#{msg.descs.to_s})"
-rescue BUFRMsg::ENOSYS, BUFRMsg::EBADF => e
-  "BUFR(#{e.to_s})"
+  counter
+rescue BUFRMsg::ENOSYS, BUFRMsg::EBADF, NoMethodError => e
+  puts "BUFR(#{e.to_s}) #{ctr} #{stype}"
+  fnam.sub!(/\.json$/,'.bufr')
+  File.open(fnam, 'w'){|fp|
+    fp.write(data)
+  }
+  puts "saved to #{fnam}"
 end
 
 def dtype data
@@ -110,58 +75,32 @@ def dtype data
   end
 end
 
-ts = Hash.new()
-tc = Hash.new(0)
 wget = WGet.new()
 
 SERIES.each{|name, path|
   Dir.glob(path).each{|gzfn|
-    STDERR.puts "= #{gzfn}"
+    warn "= #{gzfn}"
     TarReader.open(gzfn){|tar|
       tar.each_entry{|ent|
+        case ent.name
+        when /([-\w]+)_data_core_weather_surface-based-observations_(\w+)/ then
+          ctr, stype = $1, $2
+        else next
+        end
+        ctr.sub!(/^\w+-/,'')
         json=ent.read
         next if json.nil?
         rec=JSON.parse(json)
-        mdid = rec['properties']['metadata_id']
-        next unless mdid
-        topic = guess_topic(rec, gdbm)
-        case topic
-        when '(gts)' then next
-        when /cache\/a\/wis2\/ca-eccc-msc\/data\/core\/\w+\/experimental/ then next
-        when /space-based-observations/ then next
-        end
-        if !topic
-          if mdid then
-            STDERR.puts "unresolvable mdid=#{mdid}"
-          else
-            STDERR.puts "unresolvable dataid=#{rec['properties']['data_id']}"
-          end
-          topic = '(nil)'
-          next
-        end
         clink = nil
         rec['links'].each{|link|
           next unless TOKYO === link['href']
           clink = link if link['rel']=='canonical'
         }
         next unless clink
-        ts[topic] = Hash.new(0) unless ts.include?(topic)
-        tc[topic]+=1
-        x = rand()*tc[topic]
-        if x > 0.5 then
-          next
-        end
         data = wget.wget(clink['href'])
-        dt = dtype(data)
-        ts[topic][dt] += 1
+        bufrtest(data, ctr, stype, ent.name)
       }
     }
   }
 }
 
-ts.keys.sort.each do |topic|
-  tab = ts[topic]
-  tab.each do |dt,n|
-    printf("%7u\t%s\t%s\n", n, topic, dt)
-  end
-end

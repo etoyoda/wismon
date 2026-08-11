@@ -148,11 +148,13 @@ class BufrCheck
       issuer=case cat when 2 then 20001 else 20000 end
       swsi=wsiformat(0,issuer,0,ii*1000+iii).sub(/ /,'?')
     end
-    row=[srtime,utoa02(ii)+utoa03(iii),utoa03(cat)+utoa03(subcat),
+    row=[srtime,srtime,utoa02(ii)+utoa03(iii),utoa03(cat)+utoa03(subcat),
       format('%+06.2f',lat),format('%+07.2f',lon),@topic,descs]
     @progress.ping
-    if not @odb.include?(swsi) or @odb[swsi][0]<row[0] then
+    if not @odb.include?(swsi) then
       @odb[swsi]=row
+    elsif @odb[swsi][0]<row[0] then
+      @odb[swsi][0]=row[0]
     end
   end
 

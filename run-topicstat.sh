@@ -28,8 +28,11 @@ ln -f gtshist-jmagc.txt gtshist-jmagc-prev.txt
 mv -f z.gtsj.txt gtshist-jmagc.txt
 
 ruby ${base}/wnm-convobs.rb > z.convobs.txt 2> convobs.log
-# fails for the first time run, and that is ignored by ||: 
-ln -f convobs.txt convobs-prev.txt || :
+if [ -f convobs.txt ]; then
+  ln -f convobs.txt convobs-prev.txt
+else
+  touch convobs.txt
+fi
 ruby ${base}/convobs-merge.rb convobs.txt z.convobs.txt > z.convobs2.txt
 mv -f z.convobs2.txt convobs.txt
 rm -f z.convobs.txt

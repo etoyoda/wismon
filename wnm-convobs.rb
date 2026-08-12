@@ -125,6 +125,8 @@ class BufrCheck
     if i then format('%03u', i) else '///' end
   end
 
+  WSI_EMPTY= %r<^/-///-/-///// *$>
+
   def subset tree
     cat=@hdr[:cat]
     subcat=@hdr[:subcat]
@@ -132,6 +134,7 @@ class BufrCheck
     descs=@hdr[:descs]
     ii=find(tree,'001001')
     iii=find(tree,'001002')
+    shipid=find(tree,'001011')
     wsi1=find(tree,'001125')
     wsi2=find(tree,'001126')
     wsi3=find(tree,'001127')
@@ -144,9 +147,17 @@ class BufrCheck
       lon *= 0.00001 if lon.abs > 1000.0
     end
     swsi=wsiformat(wsi1,wsi2,wsi3,wsi4)
-    if wsi4.nil? and ii and iii then
-      issuer=case cat when 2 then 20001 else 20000 end
-      swsi=wsiformat(0,issuer,0,ii*1000+iii).sub(/ /,'?')
+    if WSI_EMPTY === swsi
+      if ii and iii then
+        issuer=case cat when 2 then 20001 else 20000 end
+        swsi=wsiformat(0,issuer,0,ii*1000+iii).sub(/ /,'?')
+      elsif shipid then
+        swsi=wsiformat(0,22000,0,shipid)
+      elsif xid=find(tree,'001085') then
+        swsi=wsiformat(0,22000,0,xid)
+      else
+        STDERR.puts([cat, subcat, @topic, descs].inspect)
+      end
     end
     row=[srtime,srtime,utoa02(ii)+utoa03(iii),utoa03(cat)+utoa03(subcat),
       format('%+06.2f',lat),format('%+07.2f',lon),@topic,descs]
@@ -191,7 +202,7 @@ class App
     @bufrdbdir='/nwp/bin'
     @files=[]
     @gcsel='jp-jma-global-cache'
-    @tpsel='/(synop|temp)$'
+    @tpsel='(synop|temp|ship|wind-profile)'
     for arg in argv
       case arg
       when /^--gc=/ then @gccel=$'

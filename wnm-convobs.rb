@@ -151,11 +151,26 @@ class BufrCheck
     row=[srtime,srtime,utoa02(ii)+utoa03(iii),utoa03(cat)+utoa03(subcat),
       format('%+06.2f',lat),format('%+07.2f',lon),@topic,descs]
     @progress.ping
+    register(swsi, row)
+  end
+
+  def register(swsi, row)
     if not @odb.include?(swsi) then
       @odb[swsi]=row
     elsif @odb[swsi][0]<row[0] then
       @odb[swsi][0]=row[0]
     end
+  end
+
+  def register_tsi(iyy, igg, tsi)
+    now=Time.now.utc
+    iyy-=50 if iyy>50
+    rtime=Time.gm(now.year, now.mon, now.day, iyy, igg)
+    rtime-=86400 if rtime>now
+    srtime=rtime.strftime('%Y%m%dT%H%M%S')
+    row=[srtime,srtime,tsi,'//////','+NaN','+NaN',@topic,'NIL']
+    swsi=wsiformat(0,20001,0,tsi)
+    register(swsi,row)
   end
 
   def endbufr
@@ -272,6 +287,11 @@ class App
           @mutex.synchronize do
             @dumper.topic=topic
             @bufrdb.decode(bmsg,:direct,@dumper)
+          end
+        elsif /\n(?:TT|PP)[A-D]{2} ([0156][0-9])(00)\d (\d{5}) +NIL=/===msg[0,128] then
+          @mutex.synchronize do
+            @dumper.topic=topic
+            @dumper.register_tsi($1.to_i, $2.to_i, $3)
           end
         else
           @errs["not BUFR #{msg[0,50].inspect}"]+=1

@@ -178,7 +178,11 @@ class App
     @gcsel='jp-jma-global-cache'
     @tpsel='/(synop|temp)$'
     for arg in argv
-      @files.push arg
+      case arg
+      when /^--gc=/ then @gccel=$'
+      when /^--topic=/ then @tpsel=$'
+      else @files.push arg
+      end
     end
     @files.push(DEFPATH) if @files.empty?
     @tpreg=Regexp.new(@tpsel)

@@ -160,9 +160,13 @@ class BufrCheck
         swsi=wsiformat(0,20002,0,format('%01u%02u%03u', a1, bw, nb3 % 1000))
       elsif cat==0 and subcat==7 and name=find(tree,'001015') then
         swsi=wsiformat(0,65534,1015,name=name[0,15].strip)
+      elsif cat==2 and subcat==7 then
+        name=['DROP', find(tree,'002011'), @topic.split(/-/,3)[0,2]].compact.join.upcase
+        # 9052 is for TM309052
+        swsi=wsiformat(0,65534,9052,name)
       else
         row=[cat, subcat, @topic, descs]
-        row.push(find(tree,'001015'))
+        row.push(tree.flatten[0,32])
         STDERR.puts(row.inspect)
       end
     end

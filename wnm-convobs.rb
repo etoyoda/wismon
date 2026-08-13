@@ -153,10 +153,17 @@ class BufrCheck
         swsi=wsiformat(0,issuer,0,ii*1000+iii).sub(/ /,'?')
       elsif shipid then
         swsi=wsiformat(0,20003,0,shipid)
-      elsif xid=find(tree,'001085') then
-        swsi=wsiformat(0,22000,0,xid)
+      elsif xid=find(tree,'001087') then
+        swsi=wsiformat(0,20002,0,xid)
+      elsif a1=find(tree,'001003') and bw=find(tree,'001020') and
+        nb3=find(tree,'001005') then
+        swsi=wsiformat(0,20002,0,format('%01u%02u%03u', a1, bw, nb3 % 1000))
+      elsif cat==0 and subcat==7 and name=find(tree,'001015') then
+        swsi=wsiformat(0,65534,1015,name=name[0,15].strip)
       else
-        STDERR.puts([cat, subcat, @topic, descs].inspect)
+        row=[cat, subcat, @topic, descs]
+        row.push(find(tree,'001015'))
+        STDERR.puts(row.inspect)
       end
     end
     row=[srtime,srtime,utoa02(ii)+utoa03(iii),utoa03(cat)+utoa03(subcat),
@@ -202,7 +209,7 @@ class App
     @bufrdbdir='/nwp/bin'
     @files=[]
     @gcsel='jp-jma-global-cache'
-    @tpsel='(synop|temp|ship|wind-profile)'
+    @tpsel='(synop|temp|ship|wind-profile|buoys)'
     for arg in argv
       case arg
       when /^--gc=/ then @gccel=$'

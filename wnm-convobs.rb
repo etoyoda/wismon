@@ -152,7 +152,7 @@ class BufrCheck
         issuer=case cat when 2 then 20001 else 20000 end
         swsi=wsiformat(0,issuer,0,ii*1000+iii).sub(/ /,'?')
       elsif shipid then
-        swsi=wsiformat(0,22000,0,shipid)
+        swsi=wsiformat(0,20003,0,shipid)
       elsif xid=find(tree,'001085') then
         swsi=wsiformat(0,22000,0,xid)
       else

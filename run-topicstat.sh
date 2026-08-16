@@ -27,18 +27,19 @@ ruby ${base}/wnm-gtshist.rb jmagc $prev > z.gtsj.txt
 ln -f gtshist-jmagc.txt gtshist-jmagc-prev.txt
 mv -f z.gtsj.txt gtshist-jmagc.txt
 
-ruby ${base}/wnm-convobs.rb > z.convobs.txt 2> convobs.log
+rm -f convobs-cur.txt convobs.log
+ruby ${base}/wnm-convobs.rb > convobs-cur.txt 2> convobs.log
 if [ -f convobs.txt ]; then
   ln -f convobs.txt convobs-prev.txt
 else
   touch convobs.txt
 fi
-ruby ${base}/convobs-merge.rb convobs.txt z.convobs.txt > z.convobs2.txt
+rm -f z.convobs2.txt
+ruby ${base}/convobs-merge.rb convobs.txt convobs-cur.txt > z.convobs2.txt
 mv -f z.convobs2.txt convobs.txt
-rm -f z.convobs.txt
 
 cd /nwp/m1
-CONVOBS=convobs.txt
+CONVOBS=convobs-cur.txt
 
 ##--- BEGIN DRAWING
 if test -x /usr/bin/gmt

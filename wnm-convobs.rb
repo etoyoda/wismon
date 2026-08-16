@@ -161,7 +161,7 @@ class BufrCheck
       elsif cat==0 and subcat==7 and name=find(tree,'001015') then
         swsi=wsiformat(0,65534,1015,name=name[0,15].strip)
       elsif cat==2 and subcat==7 then
-        name=['DROP', find(tree,'002011'), @topic.split(/-/,3)[0,2]].compact.join.upcase
+        name=['DROP', find(tree,'002011'), @topic.split(/\W/,3)[0,2]].compact.join[0,16].upcase
         # 9052 is for TM309052
         swsi=wsiformat(0,65534,9052,name)
       else

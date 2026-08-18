@@ -150,9 +150,11 @@ class BufrCheck
     if WSI_EMPTY === swsi
       if ii and iii then
         issuer=case cat when 2 then 20001 else 20000 end
-        swsi=wsiformat(0,issuer,0,ii*1000+iii).sub(/ /,'?')
+        tsi=format('%05u', ii*1000+iii)
+        swsi=wsiformat(0,issuer,0,tsi).sub(/ /,'?')
       elsif shipid then
-        swsi=wsiformat(0,20003,0,shipid)
+        issue=case cat when 2 then 1 else 0 end
+        swsi=wsiformat(0,20003,issue,shipid)
       elsif xid=find(tree,'001087') then
         swsi=wsiformat(0,20002,0,xid)
       elsif a1=find(tree,'001003') and bw=find(tree,'001020') and

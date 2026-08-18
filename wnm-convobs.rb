@@ -302,12 +302,29 @@ class App
     @wget.done!
   end
 
+  BFTP00=/(\d{8})00\x01\r\r\n(\d\d\d)\r\r\n([A-Z]{4}\d\d [A-Z]{4} \d{6})/
+
   def phase2 id
     loop do
       topic,msg=@wget.wget2(id)
       begin
         if msg.nil? or 'NIL'==msg or /\r\r\nNIL\r\r\n/===msg[0,128] then
           sleep 0.1
+        elsif BFTP00 === msg then
+          ofsb=0
+          while BFTP00===msg[ofsb,128] do
+            blen,nnn,hdr=$1.to_i,$2,$3
+            #STDERR.puts([:bftp,ofsb,nnn,hdr].inspect)
+            if /BUFR/===msg[ofsb,128]
+              ofs=ofsb+msg[ofsb,128].index('BUFR')
+              bmsg=BUFRMsg.new(msg,ofs,msg.size-ofs,0)
+              @mutex.synchronize do
+                @dumper.topic=topic
+                @bufrdb.decode(bmsg,:direct,@dumper)
+              end
+            end
+            ofsb+=(blen+10)
+          end
         elsif /BUFR/===msg[0,128]
           ofs=msg.index('BUFR')
           bmsg=BUFRMsg.new(msg,ofs,msg.size-ofs,0)

@@ -67,6 +67,7 @@ class Progress
   def initialize out
     @out=out
     @btime=Time.now.utc
+    @badness=Hash.new(0)
     @n=0
   end
 
@@ -77,15 +78,27 @@ class Progress
     STDERR.printf("%6u[msgs] %6.2f[s] %8.3g[msg/s]\n", @n, t, @n/t)
   end
 
+  def report
+    STDERR.puts "Msg summary:" unless @badness.epmty?
+    @badness.each{|key,count|
+      STDERR.printf("%06u %s\n", count, key)
+    }
+  end
+
 end
 
 class BufrCheck
 
-  def initialize odb
+  def initialize odb, err
     @hdr=nil
     @topic=nil
     @odb=odb
+    @err=err
     @progress=Progress.new(STDERR)
+  end
+
+  def regbad key
+    @err[key]+=1
   end
 
   attr_accessor :topic
@@ -143,8 +156,14 @@ class BufrCheck
     lon=find(tree,'006001')||find(tree,'006002')||Float::NAN
     # russia hack
     if /(kz-|ru-|by-)/===@topic then
-      lat *= 0.00001 if lat.abs > 1000.0
-      lon *= 0.00001 if lon.abs > 1000.0
+      if lat.abs > 1000.0
+        regbad('lat *= 0.00001')
+        lat *= 0.00001
+      end
+      if lon.abs > 1000.0
+        regbad('lon *= 0.00001')
+        lon *= 0.00001
+      end
     end
     swsi=wsiformat(wsi1,wsi2,wsi3,wsi4)
     if WSI_EMPTY === swsi
@@ -152,25 +171,34 @@ class BufrCheck
         issuer=case cat when 2 then 20001 else 20000 end
         tsi=format('%05u', ii*1000+iii)
         swsi=wsiformat(0,issuer,0,tsi).sub(/ /,'?')
+        regbad("Guessed WSI #{issuer}")
       elsif shipid then
         issue=case cat when 2 then 1 else 0 end
         swsi=wsiformat(0,20003,issue,shipid)
+        regbad("Guessed WSI 20003-#{issue}")
       elsif xid=find(tree,'001087') then
         swsi=wsiformat(0,20002,0,xid)
+        regbad("Guessed WSI 20002<001087")
       elsif a1=find(tree,'001003') and bw=find(tree,'001020') and
         nb3=find(tree,'001005') then
         swsi=wsiformat(0,20002,0,format('%01u%02u%03u', a1, bw, nb3 % 1000))
+        regbad("Guessed WSI 20002<a1bwnbnbnb")
       elsif cat==0 and subcat==7 and name=find(tree,'001015') then
         swsi=wsiformat(0,65534,1015,name=name[0,15].strip)
+        regbad("Guessed WSI 65534-1015")
       elsif cat==2 and subcat==7 then
         name=['DROP', find(tree,'002011'), @topic.split(/\W/,3)[0,2]].compact.join[0,16].upcase
         # 9052 is for TM309052
         swsi=wsiformat(0,65534,9052,name)
+        regbad("Guessed WSI 65534-9052 dropsonde")
       else
         row=[cat, subcat, @topic, descs]
         row.push(tree.flatten[0,32])
         STDERR.puts(row.inspect)
       end
+    elsif /^0-20000-0-/===swsi and cat==2 then
+      regbad("WSI 0-20000-0- for upper-air report")
+      swsi.sub!(/ /,'!')
     end
     row=[srtime,srtime,utoa02(ii)+utoa03(iii),utoa03(cat)+utoa03(subcat),
       format('%+06.2f',lat),format('%+07.2f',lon),@topic,descs]
@@ -228,9 +256,9 @@ class App
     @wget=WGet.new
     @bufrdb=BufrDB.new(@bufrdbdir)
     @odb=Hash.new
-    @dumper=BufrCheck.new(@odb)
     @mutex=Mutex.new
     @errs=Hash.new(0)
+    @dumper=BufrCheck.new(@odb,@errs)
   end
 
   def fnam_to_topic topic
@@ -315,9 +343,11 @@ class App
           while BFTP00===msg[ofsb,128] do
             blen,nnn,hdr=$1.to_i,$2,$3
             #STDERR.puts([:bftp,ofsb,nnn,hdr].inspect)
-            if /BUFR/===msg[ofsb,128]
-              ofs=ofsb+msg[ofsb,128].index('BUFR')
-              bmsg=BUFRMsg.new(msg,ofs,msg.size-ofs,0)
+            ofsb_bufr=msg[ofsb,128].index('BUFR')
+            if ofsb_bufr then
+              ofs=ofsb+ofsb_bufr
+              bufrlen=msg.size-ofs
+              bmsg=BUFRMsg.new(msg,ofs,bufrlen,0)
               @mutex.synchronize do
                 @dumper.topic=topic
                 @bufrdb.decode(bmsg,:direct,@dumper)
@@ -374,7 +404,7 @@ class App
     end
     STDOUT.flush
     for msg, n in @errs
-      STDERR.printf("%u: %s\n", n, msg)
+      STDERR.printf("%06u: %s\n", n, msg)
     end
   end
 

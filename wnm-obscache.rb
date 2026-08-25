@@ -4,11 +4,20 @@ require 'tarreader'
 require 'tarwriter'
 require 'json'
 require 'base64'
+require 'syslog'
 
 # for wget
 require 'net/http/persistent'
 require 'uri'
 #require 'openssl'
+
+$facility = if STDERR.tty? then Syslog::LOG_USER else Syslog::LOG_NEWS end
+Syslog.open('wnm-obscache', Syslog::LOG_PID, $facility)
+
+def eputs msg
+  Syslog.notice(msg)
+  STDERR.puts(msg) if STDERR.tty?
+end
 
 class WGet
 
@@ -48,10 +57,10 @@ class WGet
         if res.code.to_i==200
           msg=res.body
         else
-          STDERR.puts "#{res.code} - #{uri.path}"
+          eputs "#{res.code} - #{uri.path}"
         end
       rescue=>e
-        STDERR.puts "#{e.class} #{e.message} - #{uri.path}"
+        eputs "#{e.class} #{e.message} - #{uri.path}"
       end
     end
     [topic,msg]
@@ -65,10 +74,8 @@ end
 
 class Progress
 
-  def initialize out=STDERR
-    @out=out
+  def initialize
     @btime=Time.now.utc
-    @badness=Hash.new(0)
     @n=0
   end
 
@@ -76,14 +83,11 @@ class Progress
     @n+=1
     return unless (@n % 100)==1
     t=(Time.now-@btime)
-    @out.printf("%6u[msgs] %6.2f[s] %8.3g[msg/s]\n", @n, t, @n/t)
+    STDERR.printf("%6u[msgs] %6.2f[s] %8.3g[msg/s]\n", @n, t, @n/t) if STDERR.tty?
   end
 
   def report
-    @out.puts "Msg summary:" unless @badness.epmty?
-    @badness.each{|key,count|
-      @out.printf("%06u %s\n", count, key)
-    }
+    eputs(sprintf("%6u[msgs] %6.2f[s] %8.3g[msg/s]\n", @n, t, @n/t))
   end
 
 end
@@ -95,7 +99,6 @@ class App
 
   def initialize argv
     @files=[]
-    @mode='prod'
     @odir='/nwp/p0/incomplete'
     @gcsel='jp-jma-global-cache'
     @tpsel='(synop|temp|ship|wind-profile|buoys)'
@@ -113,21 +116,18 @@ class App
     @mutex=Mutex.new
     @progres=Progress.new
     @errs=Hash.new(0)
-    @lasttime=Time.at(0)
     ymd=File.readlink(@odir)
-    raise unless /(\d\d\d\d)-(\d\d)-(\d\d)/ === ymd
-    yyyy,mm,dd=$1,$2,$3
-    ofnam=File.join(@odir, "wisbf-#{yyyy}-#{mm}-#{dd}.tar")
-    warn "output #{ofnam} #{ymd}"
-    begin
-      @otar=TarWriter.new(ofnam,'a')
-    rescue Errno::EACCES => e
-      raise e if @mode=='local'
-      @mode='local'
-      ofnam=File.basename(ofnam)
-      warn "rescue output #{ofnam}"
-      retry
+    raise unless /(\d\d\d\d-\d\d-\d\d)/ === ymd
+    y4m2d2=$1
+    if File.writable?(@odir) then
+      # operational mode
+      ofnam=File.join(@odir, "wisbf-#{y4m2d2}.tar")
+    else
+      ofnam="wisbf-#{y4m2d2}.tar"
     end
+    @lasttime=File.stat(ofnam).mtime rescue Time.at(0)
+    @otar=TarWriter.new(ofnam,'a')
+    eputs "output #{ofnam} #{ymd} #{@lasttime}"
   end
 
   def fnam_to_topic topic
@@ -165,7 +165,7 @@ class App
       tar.each_entry{|ent|
         topic=fnam_to_topic(ent.name.dup)
         unless @tpreg===topic
-          warn "skip #{topic}" if $VERBOSE
+          @errs["skip #{topic}"]+=1 if $VERBOSE
           next
         end
         json=ent.read
@@ -176,7 +176,7 @@ class App
         rec=JSON.parse(json)
         prop=rec['properties'] || Hash.new
         if not @gcsel===prop['global-cache']
-          warn "skip gc #{prop['global-cache']}" if $VERBOSE
+          @errs["skip gc #{prop['global-cache']}"]+=1 if $VERBOSE
           next
         end
         clink=nil
@@ -199,10 +199,10 @@ class App
       Dir.glob(pat).each{|tarfnam|
         tartime=File.stat(tarfnam).mtime
         if tartime < @lasttime then
-          warn "skip old #{tarfnam}"
+          eputs "skip old #{tarfnam}"
           next
         else
-          warn "reading #{tarfnam}"
+          eputs "reading #{tarfnam}"
         end
         readtar(tarfnam)
       }
@@ -220,7 +220,7 @@ class App
       end
       @mutex.synchronize do
         ofnam=entname.sub(/\.json$/,'.bin')
-        warn "writing #{ofnam}" if $VERBOSE
+        eputs "writing #{ofnam}" if $VERBOSE
         @progres.ping
         @otar.add(ofnam,msg)
       end
@@ -249,7 +249,7 @@ class App
     compile
     @otar.close
     for msg, n in @errs
-      STDERR.printf("%06u: %s\n", n, msg)
+      eputs(sprintf("%06u: %s\n", n, msg))
     end
   end
 

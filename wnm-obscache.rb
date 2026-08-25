@@ -24,6 +24,10 @@ class WGet
     @done=true
   end
 
+  def done?
+    @done && @q.empty?
+  end
+
   def qdirect topic, data
     @q << [topic, data]
   end
@@ -91,6 +95,7 @@ class App
 
   def initialize argv
     @files=[]
+    @mode='prod'
     @odir='/nwp/p0/incomplete'
     @gcsel='jp-jma-global-cache'
     @tpsel='(synop|temp|ship|wind-profile|buoys)'
@@ -116,7 +121,9 @@ class App
     warn "output #{ofnam} #{ymd}"
     begin
       @otar=TarWriter.new(ofnam,'a')
-    rescue Errno::EACCES
+    rescue Errno::EACCES => e
+      raise e if @mode=='local'
+      @mode='local'
       ofnam=File.basename(ofnam)
       warn "rescue output #{ofnam}"
       retry
@@ -193,6 +200,7 @@ class App
         tartime=File.stat(tarfnam).mtime
         if tartime < @lasttime then
           warn "skip old #{tarfnam}"
+          next
         else
           warn "reading #{tarfnam}"
         end
@@ -205,7 +213,11 @@ class App
   def phase2 id
     loop do
       entname,msg=@wget.wget2(id)
-      break if msg.nil?
+      if msg.nil?
+        break if @wget.done?
+        sleep 0.1
+        next
+      end
       @mutex.synchronize do
         ofnam=entname.sub(/\.json$/,'.bin')
         warn "writing #{ofnam}" if $VERBOSE

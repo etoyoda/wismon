@@ -1,2 +1,3 @@
 03 09 *  *  *  nwp bash /usr/local/bin/run-topicstat.sh
 10 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb
+11 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='metop-.+/(gras|ro)' --opfx=gras

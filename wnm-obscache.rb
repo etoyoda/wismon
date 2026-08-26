@@ -125,7 +125,7 @@ class App
     else
       ofnam="wisbf-#{y4m2d2}.tar"
     end
-    @lasttime=File.stat(ofnam).mtime rescue Time.at(0)
+    @lasttime=File.stat(ofnam).mtime rescue Time.now - 7200
     @otar=TarWriter.new(ofnam,'a')
     eputs "output #{ofnam} #{ymd} #{@lasttime}"
   end

@@ -102,11 +102,13 @@ class App
     @odir='/nwp/p0/incomplete'
     @gcsel='jp-jma-global-cache'
     @tpsel='(synop|temp|ship|wind-profile|buoys)'
+    @opfx='wisbf'
     for arg in argv
       case arg
       when /^--gc=/ then @gccel=$'
       when /^--topic=/ then @tpsel=$'
       when /^--odir=/ then @odir=$'
+      when /^--opfx=/ then @opfx=$'
       else @files.push arg
       end
     end
@@ -121,9 +123,9 @@ class App
     y4m2d2=$1
     if File.writable?(@odir) then
       # operational mode
-      ofnam=File.join(@odir, "wisbf-#{y4m2d2}.tar")
+      ofnam=File.join(@odir, "#{@opfx}-#{y4m2d2}.tar")
     else
-      ofnam="wisbf-#{y4m2d2}.tar"
+      ofnam="#{@opfx}-#{y4m2d2}.tar"
     end
     @lasttime=File.stat(ofnam).mtime rescue Time.now - 7200
     @otar=TarWriter.new(ofnam,'a')

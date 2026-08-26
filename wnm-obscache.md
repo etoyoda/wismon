@@ -97,6 +97,30 @@ buoys
 jp-jma-global-cache
 ```
 
+## コマンドラインオプション
+
+### `--topic=REGEXP`
+ 
+処理対象とする Topic を Ruby 正規表現で指定する。
+
+既定値:
+
+```text
+(synop|temp|ship|wind-profile|buoys)
+```
+
+#### 例: SYNOPのみ
+ 
+```bash
+wnm-obscache.rb --topic='synop'
+```
+ 
+#### 例: SYNOPとTEMPのみ
+ 
+```bash
+wnm-obscache.rb --topic='synop|temp'
+```
+
 ## 出力
 
 ### 観測データキャッシュ
@@ -122,6 +146,12 @@ jp-jma-global-cache
 ```text
 wisbf-2026-08-26.tar
 ```
+
+※ 保存先ディレクトリが書き込み不可の場合、カレントディレクトリに同名のファイルを書き出す。非運用ユーザによる試験を想定した機能で、このとき syslog facility は news から user に切り替わる。
+
+### Syslog
+
+$ journalctl -t wnm-obscache --facility=news
 
 ## 実行タイミング
 

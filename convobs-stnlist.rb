@@ -1,0 +1,310 @@
+#!/usr/bin/ruby
+
+require 'tarreader'
+
+# for wget
+require 'net/http/persistent'
+require 'uri'
+#require 'openssl'
+
+$LOAD_PATH.push('/var/www/html/2019/bufrconv')
+require 'bufrscan'
+require 'bufrdump'
+
+class Progress
+
+  def initialize out
+    @out=out
+    @btime=Time.now.utc
+    @n=0
+  end
+
+  def ping
+    @n+=1
+    return unless (@n % 1000)==1
+    t=(Time.now-@btime)
+    STDERR.printf("%6u[msgs] %6.2f[s] %8.4g[msg/s]\n", @n, t, @n/t)
+  end
+
+end
+
+class BufrCheck
+
+  def initialize odb, err
+    @hdr=nil
+    @topic=nil
+    @odb=odb
+    @err=err
+    @progress=Progress.new(STDERR)
+  end
+
+  def regbad key
+    @err[key]+=1
+  end
+
+  attr_accessor :topic
+
+  def newbufr hdr
+    @hdr=hdr
+  end
+
+  def find tree, fxy
+    for elem in tree
+      if elem.first==fxy
+        return elem[1]
+      elsif Array===elem.first
+        ret=find(elem.first, fxy)
+        return ret if ret
+      end
+    end
+    return nil
+  end
+
+  # practical max length = 1+1+5+1+5+1+16=30
+  def wsiformat wsi1, wsi2, wsi3, wsi4
+    wsi1 = if wsi1 then format('%u', wsi1) else '/' end
+    wsi2 = if wsi2 then format('%u', wsi2) else '///' end
+    wsi3 = if wsi3 then format('%u', wsi3) else '/' end
+    # theoretically wsi4 should be left-aligned and wsi4.rstrip would suffice
+    # but in reality some wsi4 comes with left-padded spaces
+    wsi4 = case wsi4 when String then wsi4.strip when Integer then wsi4.to_s else '/////' end
+    format('%-31s', [wsi1, wsi2, wsi3, wsi4].join('-'))
+  end
+
+  def utoa02 i
+    if i then format('%02u', i) else '//' end
+  end
+
+  def utoa03 i
+    if i then format('%03u', i) else '///' end
+  end
+
+  WSI_EMPTY= %r<^/-///-/-///// *$>
+
+  def subset tree
+    cat=@hdr[:cat]
+    subcat=@hdr[:subcat]
+    srtime=@hdr[:reftime].strftime('%Y%m%dT%H%M%S')
+    descs=@hdr[:descs]
+    ii=find(tree,'001001')
+    iii=find(tree,'001002')
+    shipid=find(tree,'001011')
+    wsi1=find(tree,'001125')
+    wsi2=find(tree,'001126')
+    wsi3=find(tree,'001127')
+    wsi4=find(tree,'001128')
+    lat=find(tree,'005001')||find(tree,'005002')||Float::NAN
+    lon=find(tree,'006001')||find(tree,'006002')||Float::NAN
+    # russia hack
+    if /(kz-|ru-|by-)/===@topic then
+      if lat.abs > 1000.0
+        regbad('lat *= 0.00001')
+        lat *= 0.00001
+      end
+      if lon.abs > 1000.0
+        regbad('lon *= 0.00001')
+        lon *= 0.00001
+      end
+    end
+    swsi=wsiformat(wsi1,wsi2,wsi3,wsi4)
+    if WSI_EMPTY === swsi
+      if ii and iii then
+        issuer=case cat when 2 then 20001 else 20000 end
+        tsi=format('%05u', ii*1000+iii)
+        swsi=wsiformat(0,issuer,0,tsi).sub(/ /,'?')
+        regbad("Guessed WSI #{issuer}")
+      elsif shipid then
+        issue=case cat when 2 then 1 else 0 end
+        swsi=wsiformat(0,20003,issue,shipid)
+        regbad("Guessed WSI 20003-#{issue}")
+      elsif xid=find(tree,'001087') then
+        swsi=wsiformat(0,20002,0,xid)
+        regbad("Guessed WSI 20002<001087")
+      elsif a1=find(tree,'001003') and bw=find(tree,'001020') and
+        nb3=find(tree,'001005') then
+        swsi=wsiformat(0,20002,0,format('%01u%02u%03u', a1, bw, nb3 % 1000))
+        regbad("Guessed WSI 20002<a1bwnbnbnb")
+      elsif cat==0 and subcat==7 and name=find(tree,'001015') then
+        swsi=wsiformat(0,65534,1015,name=name[0,15].strip)
+        regbad("Guessed WSI 65534-1015")
+      elsif cat==2 and subcat==7 then
+        name=['DROP', find(tree,'002011'), @topic.split(/\W/,3)[0,2]].compact.join[0,16].upcase
+        # 9052 is for TM309052
+        swsi=wsiformat(0,65534,9052,name)
+        regbad("Guessed WSI 65534-9052 dropsonde")
+      else
+        row=[cat, subcat, @topic, descs]
+        row.push(tree.flatten[0,32])
+        STDERR.puts(row.inspect)
+      end
+    elsif /^0-20000-0-/===swsi and cat==2 then
+      regbad("WSI 0-20000-0- for upper-air report")
+      swsi.sub!(/ /,'!')
+    end
+    row=[srtime,srtime,utoa02(ii)+utoa03(iii),utoa03(cat)+utoa03(subcat),
+      format('%+06.2f',lat),format('%+07.2f',lon),@topic,descs]
+    @progress.ping
+    register(swsi, row)
+  end
+
+  def register(swsi, row)
+    if not @odb.include?(swsi) then
+      @odb[swsi]=row
+    elsif @odb[swsi][0]<row[0] then
+      @odb[swsi][0]=row[0]
+    end
+  end
+
+  def register_tsi(iyy, igg, tsi)
+    now=Time.now.utc
+    iyy-=50 if iyy>50
+    rtime=Time.gm(now.year, now.mon, now.day, iyy, igg)
+    rtime-=86400 if rtime>now
+    srtime=rtime.strftime('%Y%m%dT%H%M%S')
+    row=[srtime,srtime,tsi,'//////','+NaN','+NaN',@topic,'NIL']
+    swsi=wsiformat(0,20001,0,tsi)
+    register(swsi,row)
+  end
+
+  def endbufr
+    @hdr=nil
+  end
+
+  def close
+  end
+
+end
+
+class App
+
+  THREADS=20
+  DEFPATH='/nwp/p0/{latest,incomplete}/wisbf-*.tar.gz'
+
+  def initialize argv
+    @bufrdbdir='/nwp/bin'
+    @files=[]
+    @gcsel='jp-jma-global-cache'
+    @tpsel='(synop|temp|ship|wind-profile|buoys)'
+    for arg in argv
+      case arg
+      when /^--gc=/ then @gccel=$'
+      when /^--topic=/ then @tpsel=$'
+      else @files.push arg
+      end
+    end
+    @files.push(DEFPATH) if @files.empty?
+    @tpreg=Regexp.new(@tpsel)
+    @bufrdb=BufrDB.new(@bufrdbdir)
+    @odb=Hash.new
+    @errs=Hash.new(0)
+    @dumper=BufrCheck.new(@odb,@errs)
+  end
+
+  def fnam_to_topic topic
+    topic.sub!(/\.json$/, '')
+    topic.sub!(/^(wnm\d{4}-\d{6}|\d{4}[A-Z]{4})-/, '')
+    if /-gts-to-wis2_data_\w+_(([A-Z]_){4}\d\d)_([A-Z]{4})/ === topic
+      cccc,ttaaii=$3,$1
+      topic="gts-#{ttaaii.gsub(/_/,'')}-#{cccc}"
+    elsif /^A_([A-Z]{4}\d\d)([A-Z]{4})\d{6}/ === topic
+      cccc,ttaaii=$2,$1
+      topic="gts-#{ttaaii}-#{cccc}"
+    end
+    topic.sub!(/_d_c_w_p_a_/, '_data_core_weather_prediction_analysis_')
+    topic.sub!(/_d_c_w_p_f_/, '_data_core_weather_prediction_forecast_')
+    topic.sub!(/_d_c_w_p_forecast/, '_data_core_weather_prediction_forecast')
+    topic.sub!(/_d_c_w_s_sentinel/,
+      '_data_core_weather_space-based-observations_sentinel')
+    topic.sub!(/_d_c_w_/, '_data_core_weather_')
+    topic.sub!(/_d_c_/, '_data_core_')
+    topic.sub!(/_d_/, '_data_')
+    topic.gsub!(/_/, '/')
+    topic
+  end
+
+  def readtar tarfnam
+    TarReader.open(tarfnam){|tar|
+      tar.each_entry{|ent|
+        topic=fnam_to_topic(ent.name)
+        unless @tpreg===topic
+          next
+        end
+        msg=ent.read
+        if msg.nil?
+          @errs["nil tar entry - #{ent.name}"]+=1
+          next
+        end
+        compile_phase2(topic, msg)
+      }
+    }
+  end
+
+  # scan tar.gz files and put URLs into @wget queue
+  def compile_phase1
+    @files.each{|pat|
+      Dir.glob(pat).each{|tarfnam|
+        readtar(tarfnam)
+      }
+    }
+  end
+
+  BFTP00=/(\d{8})00\x01\r\r\n(\d\d\d)\r\r\n([A-Z]{4}\d\d [A-Z]{4} \d{6})/
+
+  def compile_phase2 topic, msg
+    if msg.nil? then
+      return
+    elsif 'NIL'==msg or /\r\r\nNIL\r\r\n/===msg[0,128] then
+      return
+    elsif BFTP00 === msg then
+      ofsb=0
+      while BFTP00===msg[ofsb,128] do
+        blen,nnn,hdr=$1.to_i,$2,$3
+        #STDERR.puts([:bftp,ofsb,nnn,hdr].inspect)
+        ofsb_bufr=msg[ofsb,128].index('BUFR')
+        if ofsb_bufr then
+          ofs=ofsb+ofsb_bufr
+          bufrlen=msg.size-ofs
+          bmsg=BUFRMsg.new(msg,ofs,bufrlen,0)
+          @dumper.topic=topic
+          @bufrdb.decode(bmsg,:direct,@dumper)
+        end
+        ofsb+=(blen+10)
+      end
+    elsif /BUFR/===msg[0,128]
+      ofs=msg.index('BUFR')
+      bmsg=BUFRMsg.new(msg,ofs,msg.size-ofs,0)
+      @dumper.topic=topic
+      @bufrdb.decode(bmsg,:direct,@dumper)
+    elsif /\n(?:TT|PP)[A-D]{2} ([0156][0-9])(00)\d (\d{5}) +NIL=/===msg[0,128] then
+      @dumper.topic=topic
+      @dumper.register_tsi($1.to_i, $2.to_i, $3)
+    else
+      @errs["not BUFR #{msg[0,50].inspect}"]+=1
+    end
+  rescue BUFRMsg::EBADF, BUFRMsg::ENOSYS => e
+    emsg=e.to_s
+    emsg.sub!(/ES \d+ mismatch msg end \d+/, 'ES * mismatch msg end *')
+    @errs["#{emsg} - #{topic}"]+=1
+  end
+
+  def compile
+    compile_phase1
+  rescue Interrupt
+    STDERR.puts "Interrupt"
+  end
+
+  def run
+    compile
+    for wsi in @odb.keys.sort
+      row=@odb[wsi]
+      puts([wsi,row].flatten.join("\t"))
+    end
+    STDOUT.flush
+    for msg, n in @errs
+      STDERR.printf("%06u: %s\n", n, msg)
+    end
+  end
+
+end
+
+App.new(ARGV).run

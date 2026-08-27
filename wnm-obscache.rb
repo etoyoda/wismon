@@ -127,7 +127,7 @@ class App
     else
       ofnam="#{@opfx}-#{y4m2d2}.tar"
     end
-    @lasttime=File.stat(ofnam).mtime rescue Time.now - 7200
+    @lasttime=File.stat(ofnam).mtime rescue Time.now - 3600
     @otar=TarWriter.new(ofnam,'a')
     eputs "output #{ofnam} #{ymd} #{@lasttime}"
   end

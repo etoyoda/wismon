@@ -105,7 +105,7 @@ class App
     @opfx='wisbf'
     for arg in argv
       case arg
-      when /^--gc=/ then @gccel=$'
+      when /^--gc=/ then @gcsel=$'
       when /^--topic=/ then @tpsel=$'
       when /^--odir=/ then @odir=$'
       when /^--opfx=/ then @opfx=$'

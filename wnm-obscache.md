@@ -121,6 +121,24 @@ wnm-obscache.rb --topic='synop'
 wnm-obscache.rb --topic='synop|temp'
 ```
 
+### `--gc=GLOBALCACHE`
+
+処理対象とする Global Cache を指定する。
+
+既定値:
+
+```text
+jp-jma-global-cache
+```
+
+例:
+
+```bash
+wnm-obscache.rb --gc=us-noaa-global-cache
+```
+
+指定した Global Cache が付与された WNM のみを処理する。
+
 ## 出力
 
 ### 観測データキャッシュ

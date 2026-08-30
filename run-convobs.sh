@@ -16,8 +16,10 @@ cd ${base}
 
 basetime=$(ruby -rtime -e 'puts(Time.at(((Time.parse(ARGV.first.sub(/Z/,":00:00Z")).to_i-1800)/86400-1)*86400).utc.strftime("%Y-%m-%dT%H:%M:%SZ"))' $refhour)
 ymd=$(ruby -rtime -e 'puts(Time.parse(ARGV.first).utc.strftime("%Y-%m-%d"))' $basetime)
+export ymd
 prevday=$(ruby -rtime -e 'puts(Time.at(Time.parse(ARGV.first).to_i-86400).utc.strftime("%Y-%m-%dT%H:%M:%SZ"))' $basetime)
 ymdp=$(ruby -rtime -e 'puts(Time.parse(ARGV.first).utc.strftime("%Y-%m-%d"))' $prevday)
+export ymdp
 
 gtsbf=${nwp}/p0/${ymd}/obsbf-${ymd}.tar
 if test ! -f ${gtsbf} ; then
@@ -50,3 +52,6 @@ else
   cp -f convwis-${ymd}.txt convwis.txt
 fi
 
+if test -x ${bindir}/act-m2pics.sh ; then
+  bash ${bindir}/act-m2pics.sh
+fi

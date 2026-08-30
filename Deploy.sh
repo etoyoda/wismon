@@ -39,7 +39,7 @@ else
 fi
 
 for p in wnmsaver.rb wnm-topicstat.rb run-topicstat.sh topicstat-ctab.rb \
-  wnm-gtshist.rb wnm-convobs.rb convobs-merge.rb wnm-obscache.rb
+  wnm-gtshist.rb wnm-convobs.rb convobs-merge.rb wnm-obscache.rb run-convobs.sh
 do
   test -f $p
   sudo install $p /usr/local/bin/

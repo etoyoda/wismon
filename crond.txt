@@ -1,4 +1,5 @@
 03 09 *  *  *  nwp bash /usr/local/bin/run-topicstat.sh
-10 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb
+09 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='temp$' --opfx=wistm
+10 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='(synop|wind-profile|ship|buoy)'
 11 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='metop-.+/(gras|ro)' --opfx=gras
 12 09 *  *  *  nwp nwp=/nwp bash /usr/local/bin/run-convobs.sh

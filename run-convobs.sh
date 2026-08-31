@@ -43,6 +43,10 @@ if test ! -f ${wisbf} ; then
   echo missing ${wisbf}
   exit 16
 fi
+wistm=${nwp}/p0/${ymd}/wistm-${ymd}.tar
+if test -f ${wistm} ; then
+  wisbf="${wisbf} ${wistm}"
+fi
 
 time ruby ${bindir}/convobs-stnlist.rb ${wisbf} > convwis-${ymd}.txt 2> logwis-${ymd}.txt
 if test -f convwis.txt; then

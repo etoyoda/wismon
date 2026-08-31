@@ -34,6 +34,8 @@ BUFR解析
 
 までを一度に実施していたが、本プログラムは取得処理のみを担当する。
 
+WIS2.0で配信されているデータであれば観測でなくても保存できる。
+
 ## 目的
 
 - WIS2経由の観測データをローカル保存する
@@ -173,6 +175,16 @@ wnm-obscache.rb --gc=us-noaa-global-cache
 
 指定した Global Cache が付与された WNM のみを処理する。
 
+### --opfx=PREFIX
+
+出力ファイル名の接頭辞を変更する。
+
+既定値:
+
+```text
+wisbf
+```
+
 ## 出力
 
 ### 観測データキャッシュ
@@ -199,11 +211,17 @@ wnm-obscache.rb --gc=us-noaa-global-cache
 wisbf-2026-08-26.tar
 ```
 
-※ 保存先ディレクトリが書き込み不可の場合、カレントディレクトリに同名のファイルを書き出す。非運用ユーザによる試験を想定した機能で、このとき syslog facility は news から user に切り替わる。
+※ 保存先ディレクトリが書き込み不可の場合、カレントディレクトリに同名のファイルを書き出す。非運用ユーザによる試験を想定した機能。
 
 ### Syslog
 
+運用時の cron から起動された場合のログは次で取得できる:
+
 $ journalctl -t wnm-obscache --facility=news
+
+対話的に実行した場合は user ファシリティでログ出力されるので
+
+$ journalctl -t wnm-obscache --facility=user
 
 ## 実行タイミング
 
@@ -240,12 +258,12 @@ wisbf-YYYY-MM-DD.tar
 存在しない場合は
 
 ```ruby
-Time.at(0)
+Time.now - 3600
 ```
 
 を用いる。
 
-そのため初回実行時は全アーカイブを処理する。
+そのため初回実行時は直近1時間のアーカイブを処理する。
 
 ### 利点
 

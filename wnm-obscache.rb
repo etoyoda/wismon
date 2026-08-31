@@ -226,7 +226,7 @@ class App
         @progres.ping
         @otar.add(ofnam,msg)
       end
-      break if @wget.done
+      break if @wget.done?
     end
   end
 

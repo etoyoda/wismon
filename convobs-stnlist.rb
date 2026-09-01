@@ -201,7 +201,7 @@ class App
   end
 
   def fnam_to_topic topic
-    topic.sub!(/\.json$/, '')
+    topic.sub!(/\.(json|bin)$/, '')
     topic.sub!(/^(wnm\d{4}-\d{6}|\d{4}[A-Z]{4})-/, '')
     if /-gts-to-wis2_data_\w+_(([A-Z]_){4}\d\d)_([A-Z]{4})/ === topic
       cccc,ttaaii=$3,$1

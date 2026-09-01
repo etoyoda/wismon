@@ -131,7 +131,7 @@ devnode
 ### Global Cache 選択
 
 ```bash
-wnm-topicstat.rb -gc=Tokyo
+wnm-topicstat.rb -gc=jp-jma-global-cache
 ```
 
 指定した Global Cache の WNM のみを集計する。

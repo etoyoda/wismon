@@ -11,6 +11,8 @@ export TZ=UTC
 
 CONVWIS=convwis-${ymd}.txt
 CONVGTS=convgts-${ymd}.txt
+ONLYGTS=onlygts-${ymd}.txt
+ONLYWIS=onlywis-${ymd}.txt
 DATE=${ymdp}T00
 
 if test ! -f $CONVWIS ; then
@@ -27,6 +29,7 @@ fi
 if test -x /usr/bin/gmt
 then
   YPS=y.convwis.ps
+  YPNG=y.convwis.png
   YTXT=ytmp.txt
   YTXT2=ytmp2.txt
   gmt set \
@@ -37,11 +40,12 @@ then
   PROJ="-JQ0/5i"
   : ${DATE:?}
   rm -f $YPS $YTXT $YTXT2 
+
   : map 0 - SYNOP and TEMP /GTS/
   gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
   awk '($2 >= "'${DATE}'" && $8 ~ /gts-IS[IMN]/ && $7==$7+0 && $6==$6+0){print $7, $6}' $CONVGTS > $YTXT
   gmt psxy $REGION $PROJ -Sc2p -Gorange -W0.25p -O -K < $YTXT >> $YPS
-  awk '(!/DROP/ && $2 >= "'${DATE}'" && $8 ~ /gts-IU[SK]/ && $7==$7+0 && $6==$6+0){print $7, $6}' $CONVGTS > $YTXT2
+  awk '(!/DROP/ && $2 >= "'${DATE}'" && $8 ~ /gts-IU[PSK]/ && $7==$7+0 && $6==$6+0){print $7, $6}' $CONVGTS > $YTXT2
   gmt psxy $REGION $PROJ -St3p -W0.5p,blue -O -K < $YTXT2 >> $YPS
   awk '(/DROP/ && $2 >= "'${DATE}'" && $8 ~ /gts-IUD/ && $7==$7+0 && $6==$6+0){print $7, $6}' $CONVGTS > $YTXT2
   gmt psxy $REGION $PROJ -Si3p -W0.5p,cyan -O -K < $YTXT2 >> $YPS
@@ -56,7 +60,8 @@ S 0.50i t 3p - 0.5p,blue 0.55i TEMP
 ENDLEGEND
   gmt psconvert $YPS -A+m0.2c -Tg -P
   rm -f $YPS $YTXT $YTXT2
-  mv -f y.convwis.png convgts.png
+  mv -f $YPNG convgts.png
+
   : map 1 - SYNOP and TEMP
   gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
   awk '($2 >= "'${DATE}'" && $8 ~ /synop/ && $7==$7+0 && $6==$6+0){print $7, $6}' $CONVWIS > $YTXT
@@ -76,7 +81,8 @@ S 0.50i t 3p - 0.5p,blue 0.55i TEMP
 ENDLEGEND
   gmt psconvert $YPS -A+m0.2c -Tg -P
   rm -f $YPS $YTXT $YTXT2
-  mv -f y.convwis.png convwis.png
+  mv -f $YPNG convwis.png
+
   : map 2 - SHIP and BUOY
   gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
   awk '($2 >= "'${DATE}'" && $8 ~ /\/ship/ && $7==$7+0 && $6==$6+0){print $7, $6}' $CONVWIS > $YTXT
@@ -103,7 +109,51 @@ G -6.5p
 S 1.85i s 3p yellow 0.20p,red 1.9i WPROF
 ENDLEGEND
   gmt psconvert $YPS -A+m0.2c -Tg -P
-  rm -f $YPS $YTXT $YTXT2 gmt.conf gmt.history
-  mv -f y.convwis.png convwis2.png
+  rm -f $YPS $YTXT $YTXT2
+  mv -f $YPNG convwis2.png
+
+  : map 3 - ONLY GTS
+  gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
+  awk '($2 >= "'${DATE}'" && $8 ~ /gts-IS[MNI]/ && $7==$7+0 && $6==$6+0){print $7, $6}' $ONLYGTS > $YTXT
+  gmt psxy $REGION $PROJ -Sc2p -Gorange -W0.25p -O -K < $YTXT >> $YPS
+  awk '(!/DROP/ && $2 >= "'${DATE}'" && $8 ~ /gts-IU[PSK]/ && $7==$7+0 && $6==$6+0){print $7, $6}' $ONLYGTS > $YTXT2
+  gmt psxy $REGION $PROJ -St3p -W0.5p,blue -O -K < $YTXT2 >> $YPS
+  awk '(/DROP/ && $2 >= "'${DATE}'" && $8 ~ /gts-IUD/ && $7==$7+0 && $6==$6+0){print $7, $6}' $ONLYGTS > $YTXT2
+  gmt psxy $REGION $PROJ -Si3p -W0.5p,cyan -O -K < $YTXT2 >> $YPS
+  gmt pslegend $REGION $PROJ -Dg-170/-34+w1.0i+jTL+o0.1i -F+gwhite+p0.25p+r2p -O >> $YPS <<ENDLEGEND
+H 6p,Helvetica-Bold GTS-WIS2 Diff Coverage
+G 0p
+H 6p,Helvetica-Bold ${DATE}Z/PT24
+G 1p
+S 0.05i c 2p orange 0.25p 0.1i SYNOP
+G -6.5p
+S 0.50i t 3p - 0.5p,blue 0.55i TEMP
+ENDLEGEND
+  gmt psconvert $YPS -A+m0.2c -Tg -P
+  mv -f $YPNG onlygts.png
+  rm -f $YPS $YTXT $YTXT2
+
+  : map 4 - ONLY WIS
+  gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
+  awk '($2 >= "'${DATE}'" && $8 ~ /synop/ && $7==$7+0 && $6==$6+0){print $7, $6}' $ONLYWIS > $YTXT
+  gmt psxy $REGION $PROJ -Sc2p -Gorange -W0.25p -O -K < $YTXT >> $YPS
+  awk '(!/DROP/ && $2 >= "'${DATE}'" && $8 ~ /temp/ && $7==$7+0 && $6==$6+0){print $7, $6}' $ONLYWIS > $YTXT2
+  gmt psxy $REGION $PROJ -St3p -W0.5p,blue -O -K < $YTXT2 >> $YPS
+  awk '(/DROP/ && $2 >= "'${DATE}'" && $8 ~ /temp/ && $7==$7+0 && $6==$6+0){print $7, $6}' $ONLYWIS > $YTXT2
+  gmt psxy $REGION $PROJ -Si3p -W0.5p,cyan -O -K < $YTXT2 >> $YPS
+  gmt pslegend $REGION $PROJ -Dg-170/-34+w1.0i+jTL+o0.1i -F+gwhite+p0.25p+r2p -O >> $YPS <<ENDLEGEND
+H 6p,Helvetica-Bold WIS2-GTS Diff Coverage
+G 0p
+H 6p,Helvetica-Bold ${DATE}Z/PT24
+G 1p
+S 0.05i c 2p orange 0.25p 0.1i SYNOP
+G -6.5p
+S 0.50i t 3p - 0.5p,blue 0.55i TEMP
+ENDLEGEND
+  gmt psconvert $YPS -A+m0.2c -Tg -P
+  mv -f $YPNG onlywis.png
+  rm -f $YPS $YTXT $YTXT2
+
+  rm -f gmt.conf gmt.history
 fi
 ##--- END DRAWING

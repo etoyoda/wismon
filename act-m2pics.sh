@@ -46,7 +46,7 @@ then
   awk '(/DROP/ && $2 >= "'${DATE}'" && $8 ~ /gts-IUD/ && $7==$7+0 && $6==$6+0){print $7, $6}' $CONVGTS > $YTXT2
   gmt psxy $REGION $PROJ -Si3p -W0.5p,cyan -O -K < $YTXT2 >> $YPS
   gmt pslegend $REGION $PROJ -Dg-170/-34+w1.0i+jTL+o0.1i -F+gwhite+p0.25p+r2p -O >> $YPS <<ENDLEGEND
-H 6p,Helvetica-Bold WIS2 Data Coverage
+H 6p,Helvetica-Bold GTS Data Coverage
 G 0p
 H 6p,Helvetica-Bold ${DATE}Z/PT24
 G 1p

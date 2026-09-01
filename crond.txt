@@ -3,3 +3,4 @@
 10 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='(synop|wind-profile|ship|buoy)'
 11 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='metop-.+/(gras|ro)' --opfx=gras
 12 09 *  *  *  nwp nwp=/nwp bash /usr/local/bin/run-convobs.sh
+30 09 02 *  *  nwp bash /usr/local/bin/run-m1-clean.sh

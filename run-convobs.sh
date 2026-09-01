@@ -58,6 +58,11 @@ fi
 
 ruby ${bindir}/convobs-diff.rb convgts-${ymd}.txt convwis-${ymd}.txt > onlygts-${ymd}.txt
 ruby ${bindir}/convobs-diff.rb convwis-${ymd}.txt convgts-${ymd}.txt > onlywis-${ymd}.txt
+m1=/nwp/m1/convobs-cur.txt 
+if test -f ${m1} ; then
+ruby ${bindir}/convobs-diff.rb ${m1} convwis-${ymd}.txt > onlym1-${ymd}.txt
+ruby ${bindir}/convobs-diff.rb convwis-${ymd}.txt ${m1} > onlym2-${ymd}.txt
+fi
 
 if test -x ${bindir}/act-m2pics.sh ; then
   bash ${bindir}/act-m2pics.sh

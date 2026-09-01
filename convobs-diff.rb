@@ -1,0 +1,20 @@
+#!/usr/bin/ruby
+db=Hash.new
+fnam=ARGV.shift
+File.open(fnam,'r:UTF-8'){|fp|
+  fp.each{|line|
+    wsi=line.split(/\t/,2).first
+    db[wsi]=line
+  }
+}
+ARGV.each{|fnam|
+  File.open(fnam,'r:UTF-8'){|fp|
+    fp.each{|line|
+      wsi=line.split(/\t/,2).first
+      db.delete(wsi)
+    }
+  }
+}
+db.keys.sort.each{|wsi|
+  puts db[wsi]
+}

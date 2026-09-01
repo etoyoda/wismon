@@ -10,10 +10,12 @@ prevmon=$1
 cd /nwp/m1
 for dir in 2*-*[0-9]
 do
-  if [[ "${thismon}" > "${dir}" && ! -f "${dir}.tar.gz" ]] ; then
-    tar czf "${dir}.tar.gz" ${dir}
+  archname=/nwp/a1/${dir}/wismon-${dir}.tar.gz
+  if [[ "${thismon}" > "${dir}" && ! -f "${archname}" ]] ; then
+    [[ -d /nwp/a1/${dir} ]] || mkdir /nwp/a1/${dir}
+    tar czf "${archname}" ${dir}
   fi
-  if [[ "${prevmon}" > "${dir}" && -f "${dir}.tar.gz" ]] ; then
+  if [[ "${prevmon}" > "${dir}" && -f "${archname}" ]] ; then
     rm -rf ${dir}
   fi
 done

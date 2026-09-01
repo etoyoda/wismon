@@ -56,6 +56,9 @@ else
   cp -f convwis-${ymd}.txt convwis.txt
 fi
 
+ruby ${bindir}/convobs-diff.rb convgts-${ymd}.txt convwis-${ymd}.txt > onlygts-${ymd}.txt
+ruby ${bindir}/convobs-diff.rb convwis-${ymd}.txt convgts-${ymd}.txt > onlywis-${ymd}.txt
+
 if test -x ${bindir}/act-m2pics.sh ; then
   bash ${bindir}/act-m2pics.sh
 fi

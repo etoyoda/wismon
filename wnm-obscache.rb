@@ -12,10 +12,10 @@ require 'uri'
 #require 'openssl'
 
 $facility = if STDERR.tty? then Syslog::LOG_USER else Syslog::LOG_NEWS end
-Syslog.open('wnm-obscache', Syslog::LOG_PID, $facility)
+$logger = Syslog.open('wnm-obscache', Syslog::LOG_PID, $facility)
 
 def eputs msg
-  Syslog.notice(msg)
+  $logger.notice(msg)
   STDERR.puts(msg) if STDERR.tty?
 end
 
@@ -258,3 +258,4 @@ class App
 end
 
 App.new(ARGV).run
+$logger.close

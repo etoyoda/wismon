@@ -20,6 +20,7 @@ export ymd
 prevday=$(ruby -rtime -e 'puts(Time.at(Time.parse(ARGV.first).to_i-86400).utc.strftime("%Y-%m-%dT%H:%M:%SZ"))' $basetime)
 ymdp=$(ruby -rtime -e 'puts(Time.parse(ARGV.first).utc.strftime("%Y-%m-%d"))' $prevday)
 export ymdp
+echo DEBUG working for $ymdp/$ymd
 
 gtsbf=${nwp}/p0/${ymd}/obsbf-${ymd}.tar
 if test ! -f ${gtsbf} ; then
@@ -67,3 +68,5 @@ fi
 if test -x ${bindir}/act-m2pics.sh ; then
   bash ${bindir}/act-m2pics.sh
 fi
+
+echo done okay.

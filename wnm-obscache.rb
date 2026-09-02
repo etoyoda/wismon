@@ -13,9 +13,12 @@ require 'uri'
 
 $facility = if STDERR.tty? then Syslog::LOG_USER else Syslog::LOG_NEWS end
 $logger = Syslog.open('wnm-obscache', Syslog::LOG_PID, $facility)
+$loggermx = Mutex.new
 
 def eputs msg
-  $logger.notice(msg)
+  $loggermx.synchronize do
+    $logger.notice('%s', msg)
+  end
   STDERR.puts(msg) if STDERR.tty?
 end
 
@@ -60,7 +63,7 @@ class WGet
           eputs "#{res.code} - #{uri.path}"
         end
       rescue=>e
-        STDERR.puts("#{e.class} #{e.message} - #{uri.path}") if STDERR.tty?
+        eputs("#{e.class} #{e.message} - #{uri.path}")
       end
     end
     [topic,msg]

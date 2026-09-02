@@ -1,4 +1,36 @@
 #!/bin/bash
+
+# act-m2pics.sh
+#
+# Conventional Observations の観測地点一覧から GMT を用いて
+# 全球カバレッジ図を作成する。
+#
+# 入力:
+#   convgts-YYYYMMDD.txt
+#   convwis-YYYYMMDD.txt
+#   onlygts-YYYYMMDD.txt
+#   onlywis-YYYYMMDD.txt
+#
+# 出力:
+#   convgts.png
+#       GTS の SYNOP/TEMP カバレッジ
+#
+#   convwis.png
+#       WIS2 の SYNOP/TEMP カバレッジ
+#
+#   convwis2.png
+#       WIS2 の SHIP/BUOY/WIND PROFILER カバレッジ
+#
+#   onlygts.png
+#       GTS に存在し WIS2 に存在しない観測点
+#
+#   onlywis.png
+#       WIS2 に存在し GTS に存在しない観測点
+#
+# 直近24時間に報告された Conventional Observations を対象とし、
+# GTS と WIS2 の観測データ流通状況およびカバレッジ差分を
+# 地理的に可視化する。
+
 set -e
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin
 hash -r

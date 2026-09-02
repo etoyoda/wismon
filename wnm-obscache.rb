@@ -60,7 +60,7 @@ class WGet
           eputs "#{res.code} - #{uri.path}"
         end
       rescue=>e
-        eputs "#{e.class} #{e.message} - #{uri.path}"
+        STDERR.puts("#{e.class} #{e.message} - #{uri.path}") if STDERR.tty?
       end
     end
     [topic,msg]

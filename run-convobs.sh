@@ -14,7 +14,7 @@ fi
 test -d ${base} || mkdir ${base}
 cd ${base}
 
-basetime=$(ruby -rtime -e 'puts(Time.at(((Time.parse(ARGV.first.sub(/Z/,":00:00Z")).to_i-600)/86400-1)*86400).utc.strftime("%Y-%m-%dT%H:%M:%SZ"))' $refhour)
+basetime=$(ruby -rtime -e 'puts(Time.at(((Time.parse(ARGV.first.sub(/Z/,":00:00Z")).to_i)/86400-1)*86400).utc.strftime("%Y-%m-%dT%H:%M:%SZ"))' $refhour)
 ymd=$(ruby -rtime -e 'puts(Time.parse(ARGV.first).utc.strftime("%Y-%m-%d"))' $basetime)
 export ymd
 prevday=$(ruby -rtime -e 'puts(Time.at(Time.parse(ARGV.first).to_i-86400).utc.strftime("%Y-%m-%dT%H:%M:%SZ"))' $basetime)

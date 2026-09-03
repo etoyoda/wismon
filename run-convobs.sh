@@ -20,7 +20,6 @@ export ymd
 prevday=$(ruby -rtime -e 'puts(Time.at(Time.parse(ARGV.first).to_i-86400).utc.strftime("%Y-%m-%dT%H:%M:%SZ"))' $basetime)
 ymdp=$(ruby -rtime -e 'puts(Time.parse(ARGV.first).utc.strftime("%Y-%m-%d"))' $prevday)
 export ymdp
-echo DEBUG working for $ymdp/$ymd
 
 gtsbf=${nwp}/p0/${ymd}/obsbf-${ymd}.tar
 if test ! -f ${gtsbf} ; then
@@ -31,7 +30,7 @@ fi
 test ! -f z.txt || rm -f z.txt
 
 filt=--topic='gts-I(SI|SM|SN|UD|UJ|UK|UP|US|UW)'
-time ruby ${bindir}/convobs-stnlist.rb $filt ${gtsbf} > convgts-${ymd}.txt 2> loggts-${ymd}.txt
+ruby ${bindir}/convobs-stnlist.rb $filt ${gtsbf} > convgts-${ymd}.txt 2> loggts-${ymd}.txt
 if test -f convgts.txt; then
   ruby ${bindir}/convobs-merge.rb convgts-${ymd}.txt convgts.txt > z.txt
   mv -f z.txt convgts.txt
@@ -45,11 +44,23 @@ if test ! -f ${wisbf} ; then
   exit 16
 fi
 wistm=${nwp}/p0/${ymd}/wistm-${ymd}.tar
+
 if test -f ${wistm} ; then
-  wisbf="${wisbf} ${wistm}"
+  time ruby ${bindir}/convobs-stnlist.rb ${wistm} \
+  > convwis-${ymd}-t.txt 2> logwis-${ymd}-t.txt &
 fi
 
-time ruby ${bindir}/convobs-stnlist.rb ${wisbf} > convwis-${ymd}.txt 2> logwis-${ymd}.txt
+  time ruby ${bindir}/convobs-stnlist.rb ${wisbf} \
+    > convwis-${ymd}-b.txt 2> logwis-${ymd}-b.txt &
+wait
+
+if test -f ${wistm} ; then
+  ruby ${bindir}/convobs-merge.rb convwis-${ymd}-{t,b}.txt > convwis-${ymd}.txt
+  rm -f convwis-${ymd}-{t,b}.txt
+else
+  mv -f convwis-${ymd}-b.txt convwis-${ymd}.txt
+fi
+
 if test -f convwis.txt; then
   ruby ${bindir}/convobs-merge.rb convwis-${ymd}.txt convwis.txt > z.txt
   mv -f z.txt convwis.txt
@@ -68,5 +79,4 @@ fi
 if test -x ${bindir}/act-m2pics.sh ; then
   bash ${bindir}/act-m2pics.sh
 fi
-
-echo done okay.
+echo done okay

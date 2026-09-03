@@ -177,7 +177,6 @@ end
 
 class App
 
-  THREADS=20
   DEFPATH='/nwp/p0/{latest,incomplete}/wisbf-*.tar.gz'
 
   def initialize argv
@@ -185,10 +184,16 @@ class App
     @files=[]
     @gcsel='jp-jma-global-cache'
     @tpsel='(synop|temp|ship|wind-profile|buoys)'
+    @mod=1
+    @rem=0
+    raise "--mod must be more than zero" if @mod <= 0
+    raise "--rem out of range" if @rem < 0 || @rem >= @mod
     for arg in argv
       case arg
       when /^--gc=/ then @gccel=$'
       when /^--topic=/ then @tpsel=$'
+      when /^--mod=/ then @mod=Integer($')
+      when /^--rem=/ then @rem=Integer($')
       else @files.push arg
       end
     end
@@ -224,7 +229,10 @@ class App
 
   def readtar tarfnam
     TarReader.open(tarfnam){|tar|
+      ient=0
       tar.each_entry{|ent|
+        ient+=1
+        next unless @rem==(ient % @mod)
         topic=fnam_to_topic(ent.name)
         unless @tpreg===topic
           next

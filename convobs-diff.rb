@@ -33,11 +33,28 @@
 # 出力は基準ファイル中の元の行を保持したまま、
 # 差分として残った観測地点のみを出力する。
 
+def unify_wsi(wsi)
+  case wsi
+  when /^0-20000-0-(\d+)!( *)$/ then "0-20001-0-#$1 #$2"
+  when /^0-(2000[01])-0-(\d+)\?( *)$/ then "0-#$1-0-#$2 #$3"
+  when /\? *$/ then $`
+  else wsi
+  end
+end
+
 db=Hash.new
+unify=false
+while /^--/===ARGV.first
+  case opt=ARGV.shift
+  when '--unify' then unify=true
+  else raise opt
+  end
+end
 fnam=ARGV.shift
 File.open(fnam,'r:UTF-8'){|fp|
   fp.each{|line|
     wsi=line.split(/\t/,2).first
+    wsi=unify_wsi(wsi) if unify
     db[wsi]=line
   }
 }
@@ -45,6 +62,7 @@ ARGV.each{|fnam|
   File.open(fnam,'r:UTF-8'){|fp|
     fp.each{|line|
       wsi=line.split(/\t/,2).first
+      wsi=unify_wsi(wsi) if unify
       db.delete(wsi)
     }
   }

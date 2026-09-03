@@ -234,7 +234,7 @@ class App
           @errs["nil tar entry - #{ent.name}"]+=1
           next
         end
-        compile_phase2(topic, msg)
+        compile_phase2(topic, msg.b)
       }
     }
   end
@@ -259,11 +259,10 @@ class App
       ofsb=0
       while BFTP00===msg[ofsb,128] do
         blen,nnn,hdr=$1.to_i,$2,$3
-        #STDERR.puts([:bftp,ofsb,nnn,hdr].inspect)
         ofsb_bufr=msg[ofsb,128].index('BUFR')
         if ofsb_bufr then
           ofs=ofsb+ofsb_bufr
-          bufrlen=msg.size-ofs
+          bufrlen=(msg.getbyte(ofs+4)<<16 | msg.getbyte(ofs+5)<<8 | msg.getbyte(ofs+6))
           bmsg=BUFRMsg.new(msg,ofs,bufrlen,0)
           @dumper.topic=topic
           @bufrdb.decode(bmsg,:direct,@dumper)

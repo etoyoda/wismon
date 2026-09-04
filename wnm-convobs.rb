@@ -236,7 +236,7 @@ end
 
 class App
 
-  THREADS=20
+  THREADS=10
   DEFPATH='/nwp/m0/jmagc[0-9][0-9].tar.gz'
 
   def initialize argv

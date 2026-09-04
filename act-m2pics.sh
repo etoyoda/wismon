@@ -39,13 +39,12 @@ export LANG=C
 export TZ=UTC
 
 : ${ymd:?}
-: ${ymdp:?}
 
 CONVWIS=convwis-${ymd}.txt
 CONVGTS=convgts-${ymd}.txt
 ONLYGTS=onlygts-${ymd}.txt
 ONLYWIS=onlywis-${ymd}.txt
-DATE=${ymdp}T00
+DATE=${ymd}T00
 
 if test ! -f $CONVWIS ; then
   echo missing $CONVWIS

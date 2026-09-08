@@ -166,7 +166,7 @@ ENDLEGEND
 
   : map 4 - ONLY WIS
   gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
-  awk '($2 >= "'${DATE}'" && $8 ~ /synop/ && $7==$7+0 && $6==$6+0){print $7, $6}' $ONLYWIS > $YTXT
+  awk '($2 >= "'${DATE}'" && $8 ~ /synop/ && $1 !~ /0-20003-/ && $7==$7+0 && $6==$6+0){print $7, $6}' $ONLYWIS > $YTXT
   gmt psxy $REGION $PROJ -Sc2p -Gorange -W0.25p -O -K < $YTXT >> $YPS
   awk '(!/DROP/ && $2 >= "'${DATE}'" && $8 ~ /temp/ && $7==$7+0 && $6==$6+0){print $7, $6}' $ONLYWIS > $YTXT2
   gmt psxy $REGION $PROJ -St3p -W0.5p,blue -O -K < $YTXT2 >> $YPS

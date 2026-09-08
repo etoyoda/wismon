@@ -52,13 +52,10 @@ test -f $cnf || sudo install -m 0644 apache-nwp.conf $cnf
 sudo a2enconf nwp
 sudo install -m 0444 readme-datadir.txt /nwp/m0/README.txt
 
-#test -f mdtopic.gdbm || false
-#if test ! -f /nwp/m0/mdtopic.gdbm
-#then
-#  sudo install -m 0444 mdtopic.gdbm /nwp/m0/
-#fi
-
 test -d /nwp/m1 || sudo install -d -o nwp -g nwp /nwp/m1
 sudo -u nwp touch /nwp/m1/gtshist-jmagc.txt
+
+test -d /nwp/m2 || sudo install -d -o nwp -g nwp /nwp/m2
+sudo install -m 0444 convobs.html /nwp/m2/
 
 sudo install -m 0644 crond.txt /etc/cron.d/wismon

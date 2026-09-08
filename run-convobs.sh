@@ -79,4 +79,19 @@ fi
 if test -x ${bindir}/act-m2pics.sh ; then
   bash ${bindir}/act-m2pics.sh
 fi
+
+if [ -f /nwp/bin/send_png_mail.rb ] && [ -f convwis.png ]; then
+  ruby /nwp/bin/send_png_mail.rb convwis.png onlygts.png onlywis.png
+else
+  user=$(whoami)
+  {
+    echo "From: $user"
+    echo "To: $user"
+    echo "Subject: run-convobs.sh $ymd"
+    echo ""
+    echo "wismon updated topic statistics for $ymd."
+    echo "https://toyoda-eizi.net/nwp/m2/"
+  } | /usr/sbin/sendmail -t
+fi
+
 echo done okay

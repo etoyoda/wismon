@@ -133,6 +133,7 @@ class App
     @lasttime=File.stat(ofnam).mtime rescue Time.now - 3600
     @otar=TarWriter.new(ofnam,'a')
     eputs "output #{ofnam} #{ymd} #{@lasttime}"
+    @seen_did=Hash.new
   end
 
   def fnam_to_topic topic
@@ -192,6 +193,15 @@ class App
         unless clink
           @errs["missing canonical link - #{ent.name}"]+=1
           next
+        end
+        dataid=prop['data_id']
+        if dataid then
+          if @seen_did[dataid] then
+            @errs["dup data_id"]+=1
+            next
+          else
+            @seen_did[dataid]=true
+          end
         end
         handlemsg(rec,clink,ent.name)
       }

@@ -240,7 +240,7 @@ class App
         if @seen_md5[md5] then
           @errs["dup md5"]+=1
         else
-          @seen_md5[md5]=true
+          @seen_md5[md5]=entname
           # action
           ofnam=entname.sub(/\.json$/,'.bin')
           eputs "writing #{ofnam}" if $VERBOSE

@@ -134,6 +134,7 @@ class App
     @otar=TarWriter.new(ofnam,'a')
     eputs "output #{ofnam} #{ymd} #{@lasttime}"
     @seen_did=Hash.new
+    @seen_md5=Hash.new
   end
 
   def fnam_to_topic topic
@@ -234,10 +235,18 @@ class App
         next
       end
       @mutex.synchronize do
-        ofnam=entname.sub(/\.json$/,'.bin')
-        eputs "writing #{ofnam}" if $VERBOSE
-        @progres.ping
-        @otar.add(ofnam,msg)
+        # dup check
+        md5=Digest::MD5.hexdigest(msg);
+        if @seen_md5[md5] then
+          @errs["dup md5"]+=1
+        else
+          @seen_md5[md5]=true
+          # action
+          ofnam=entname.sub(/\.json$/,'.bin')
+          eputs "writing #{ofnam}" if $VERBOSE
+          @progres.ping
+          @otar.add(ofnam,msg)
+        end
       end
       break if @wget.done?
     end

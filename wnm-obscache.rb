@@ -218,7 +218,7 @@ class App
           eputs "skip old #{tarfnam}"
           next
         else
-          eputs "reading #{tarfnam}"
+          eputs "reading #{tarfnam} opfx=#@opfx"
         end
         readtar(tarfnam)
       }
@@ -273,7 +273,7 @@ class App
     compile
     @otar.close
     for msg, n in @errs
-      eputs(sprintf("%06u: %s\n", n, msg))
+      eputs(sprintf("%06u: %s opfx=%s\n", n, msg, @opfx))
     end
   end
 

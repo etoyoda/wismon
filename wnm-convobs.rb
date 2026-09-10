@@ -9,9 +9,7 @@ require 'net/http/persistent'
 require 'uri'
 #require 'openssl'
 
-$LOAD_PATH.push('/var/www/html/2019/bufrconv')
-require 'bufrscan'
-require 'bufrdump'
+require '/nwp/bin/bufrdump'
 
 class WGet
 

@@ -7,9 +7,7 @@ require 'net/http/persistent'
 require 'uri'
 #require 'openssl'
 
-$LOAD_PATH.push('/var/www/html/2019/bufrconv')
-require 'bufrscan'
-require 'bufrdump'
+require '/nwp/bin/bufrdump'
 
 class Progress
 
@@ -180,7 +178,7 @@ class App
   DEFPATH='/nwp/p0/{latest,incomplete}/wisbf-*.tar.gz'
 
   def initialize argv
-    @bufrdbdir='/nwp/bin'
+    @bufrdbdir='/nwp/share/bufrconv'
     @files=[]
     @gcsel='jp-jma-global-cache'
     @tpsel='(synop|temp|ship|wind-profile|buoys)'

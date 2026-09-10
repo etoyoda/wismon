@@ -1,3 +1,20 @@
+# wnm-topicstat.sh
+
+## 概要
+
+WNMアーカイブ (`jmagc??.tar.gz`) を集計し、
+
+- Topic別流通統計
+- Topicカテゴリ別集計
+- 日本 Global Cache 限定統計
+- GTS-to-WIS2 流通履歴
+
+を更新する日次バッチである。
+
+処理結果は `/nwp/m1` 以下へ保存される。
+
+---
+
 ## 1. Topic統計生成
 
 ### 実行スクリプト
@@ -8,41 +25,68 @@
 ### 出力
 
 ```text
-topicsYYYYMMDD.txt
-ctabYYYYMMDD.txt
+YYYY-MM/topicsYYYYMMDD.txt
+YYYY-MM/ctabYYYYMMDD.txt
+```
+
+例:
+
+```text
+2026-09/topics20260908.txt
+2026-09/ctab20260908.txt
 ```
 
 ### 内容
 
-過去24時間の WNM を解析し、
+WNM アーカイブを解析し、
 
 - Topic別流通件数
+- 総データ量
 - 平均データサイズ
 
-を集計する。
+などを集計する。
 
-さらに Topic をカテゴリ分類した集計表を生成する。
-
-### 日本GC限定統計
+続いて Topic をカテゴリへ分類し、
 
 ```text
-topicsjYYYYMMDD.txt
-ctabjYYYYMMDD.txt
+ctabYYYYMMDD.txt
 ```
 
-も同時生成する。
-
-これは
-
-```text
-global-cache = jp-jma-global-cache
-```
-
-のみを対象とした集計である。
+としてカテゴリ別集計表を生成する。
 
 ---
 
-## 2. GTS流通履歴更新
+## 2. 日本 Global Cache 限定統計
+
+### 実行スクリプト
+
+```text
+wnm-topicstat.rb -gc=jp-jma-global-cache
+topicstat-ctab.rb
+```
+
+### 出力
+
+```text
+YYYY-MM/topicsjYYYYMMDD.txt
+YYYY-MM/ctabjYYYYMMDD.txt
+```
+
+### 内容
+
+WNM のうち
+
+```text
+properties.global-cache = jp-jma-global-cache
+```
+
+が付与された通知のみを対象として集計する。
+
+Topic統計およびカテゴリ別集計を、日本 Global Cache 視点で作成する。
+
+---
+
+## 3. GTS流通履歴更新
 
 ### 実行スクリプト
 
@@ -54,9 +98,7 @@ global-cache = jp-jma-global-cache
 gtshist-jmagc.txt
 ```
 
-### 内容
-
-GTS-to-WIS2 メッセージの流通履歴を更新する。
+### バックアップ
 
 更新前ファイルは
 
@@ -66,125 +108,50 @@ gtshist-jmagc-prev.txt
 
 として保存する。
 
----
-
-## 3. 観測データ履歴更新
-
-### 実行スクリプト
-
-- `wnm-convobs.rb`
-- `convobs-merge.rb`
-
-### 出力
-
-```text
-convobs.txt
-```
-
 ### 内容
 
-観測データの出現履歴を収集する。
+GTS-to-WIS2 Topic を抽出し、
 
-収集結果を過去履歴へマージし、長期履歴を維持する。
+- TTAAii
+- CCCC
+- 初出日時
+- 最終出現日時
 
-更新前ファイルは
+などの履歴情報を更新する。
 
-```text
-convobs-prev.txt
-```
-
-として保存する。
-
----
-
-## 4. 観測カバレッジ図作成
-
-GMT が利用可能な場合に実行する。
+既存の
 
 ```text
-/usr/bin/gmt
+gtshist-jmagc.txt
 ```
 
-### 出力
-
-```text
-convobs.png
-convobs2.png
-```
-
-### convobs.png
-
-対象:
-
-- SYNOP
-- TEMP
-
-直近24時間に観測された地点を世界地図上へ描画する。
-
-記号:
-
-- 橙丸: SYNOP
-- 青三角: TEMP
-- 水色逆三角: DROP
-
-### convobs2.png
-
-対象:
-
-- SHIP
-- DRIFTING BUOY
-- MOORED BUOY
-- WAVE BUOY
-- WIND PROFILER
-
-直近24時間の観測点分布を表示する。
-
-### 目的
-
-Global Cache 経由で実際に流通している観測データの地理的カバレッジを視覚的に確認する。
-
----
-
-## 5. 通知メール送信
-
-### 優先方法
-
-```text
-/nwp/bin/send_png_mail.rb
-```
-
-が存在する場合は PNG 付きメールを送信する。
-
-### 代替方法
-
-存在しない場合は sendmail により更新通知を送信する。
-
-本文には公開ディレクトリへの URL を記載する。
+が存在する場合は、それを参照して履歴を継続更新する。
 
 ---
 
 ## 実行ディレクトリ
 
+処理は
+
 ```text
 /nwp/m1
 ```
 
-配下で処理を行う。
+配下で実行される。
 
-日別統計は
-
-```text
-YYYY-MM/
-```
-
-形式の月ディレクトリへ保存する。
+日次統計は月別ディレクトリへ保存する。
 
 例:
 
 ```text
-2026-08/
-  topics20260819.txt
-  ctab20260819.txt
+/nwp/m1
+├── 2026-09/
+│   ├── topics20260908.txt
+│   ├── ctab20260908.txt
+│   ├── topicsj20260908.txt
+│   └── ctabj20260908.txt
+├── gtshist-jmagc.txt
+└── gtshist-jmagc-prev.txt
 ```
 
 ---
@@ -194,11 +161,21 @@ YYYY-MM/
 - `wnm-topicstat.rb`
 - `topicstat-ctab.rb`
 - `wnm-gtshist.rb`
-- `wnm-convobs.rb`
-- `convobs-merge.rb`
 
 ---
 
 ## 備考
 
-ファイル名には「topicstat」と付いているが、現在は Topic 統計だけでなく、wismon が生成する日次レポート類のほぼ全てを更新する統括バッチとして運用している。
+処理対象日は
+
+```bash
+date --date 'now - 1 hour'
+```
+
+により決定される。
+
+統計ファイルは処理対象日の属する月ディレクトリへ保存される。
+
+月別ディレクトリが存在しない場合は自動作成される。
+
+本バッチは WIS2 WNM の流通状況を継続監視するための定期集計処理であり、Topic統計および GTS-to-WIS2 流通履歴の更新を担当する。

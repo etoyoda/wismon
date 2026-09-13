@@ -17,9 +17,7 @@ cd ${base}
 basetime=$(ruby -rtime -e 'puts(Time.at(((Time.parse(ARGV.first.sub(/Z/,":00:00Z")).to_i)/86400-1)*86400).utc.strftime("%Y-%m-%dT%H:%M:%SZ"))' $refhour)
 ymd=$(ruby -rtime -e 'puts(Time.parse(ARGV.first).utc.strftime("%Y-%m-%d"))' $basetime)
 export ymd
-prevday=$(ruby -rtime -e 'puts(Time.at(Time.parse(ARGV.first).to_i-86400).utc.strftime("%Y-%m-%dT%H:%M:%SZ"))' $basetime)
-ymdp=$(ruby -rtime -e 'puts(Time.parse(ARGV.first).utc.strftime("%Y-%m-%d"))' $prevday)
-export ymdp
+ym=$(ruby -rtime -e 'puts(Time.parse(ARGV.first).utc.strftime("%Y-%m"))' $basetime)
 
 gtsbf=${nwp}/p0/${ymd}/obsbf-${ymd}.tar
 if test ! -f ${gtsbf} ; then
@@ -89,6 +87,22 @@ else
     echo "wismon updated topic statistics for $ymd."
     echo "https://toyoda-eizi.net/nwp/m2/"
   } | /usr/sbin/sendmail -t
+fi
+
+m2tar=wismon2-${ym}.tar
+# does not archive files twice if the script runs twice a day
+# the m2tar stays uncompressed because tar -u is used daily
+tar -uf ${m2tar} convgts-${ymd}.txt convwis-${ymd}.txt
+for pic in convgts convwis convwis2 onlygts onlywis
+do
+  if [ -f ${pic}-${ymd}.png ] ; then
+    tar -uf ${m2tar} ${pic}-${ymd}.png
+  fi
+done
+if [ -f /nwp/m1/gtshist-jmagc.txt ]; then
+  ln -f /nwp/m1/gtshist-jmagc.txt gtshist-jmagc-${ymd}.txt
+  tar -uf ${m2tar} gtshist-jmagc-${ymd}.txt
+  rm -f gtshist-jmagc-${ymd}.txt
 fi
 
 echo done okay

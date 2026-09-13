@@ -38,7 +38,7 @@ cd /nwp/m2
 export LANG=C
 export TZ=UTC
 
-: ${ymd:?}
+: ${ymd:?give me ymd}
 
 CONVWIS=convwis-${ymd}.txt
 CONVGTS=convgts-${ymd}.txt
@@ -188,3 +188,10 @@ ENDLEGEND
   rm -f gmt.conf gmt.history
 fi
 ##--- END DRAWING
+
+for pic in convgts convwis convwis2 onlygts onlywis
+do
+  if [ -f ${pic}.png ] ; then
+    ln -f ${pic}.png ${pic}-${ymd}.png
+  fi
+done

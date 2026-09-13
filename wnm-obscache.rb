@@ -9,7 +9,8 @@ require 'syslog'
 # for wget
 require 'net/http/persistent'
 require 'uri'
-#require 'openssl'
+
+require 'gdbm'
 
 $facility = if STDERR.tty? then Syslog::LOG_USER else Syslog::LOG_NEWS end
 $logger = Syslog.open('wnm-obscache', Syslog::LOG_PID, $facility)
@@ -133,8 +134,22 @@ class App
     @lasttime=File.stat(ofnam).mtime rescue Time.now - 3600
     @otar=TarWriter.new(ofnam,'a')
     eputs "output #{ofnam} #{ymd} #{@lasttime}"
-    @seen_did=Hash.new
-    @seen_md5=Hash.new
+    didfnam=File.join(File.dirname(ofnam),'wis2-did.gdbm')
+    begin
+      @seen_did=GDBM.new(didfnam, 0644, GDBM::WRCREAT)
+    rescue Errno::EAGAIN, GDBMError
+      $logger.error('waiting for %s', didfnam)
+      sleep 10
+      retry
+    end
+    md5fnam=File.join(File.dirname(ofnam),'wis2-md5.gdbm')
+    begin
+      @seen_md5=GDBM.new(md5fnam, 0644, GDBM::WRCREAT)
+    rescue Errno::EAGAIN, GDBMError
+      $logger.error('waiting for %s', md5fnam)
+      sleep 10
+      retry
+    end
   end
 
   def fnam_to_topic topic
@@ -201,7 +216,7 @@ class App
             @errs["dup data_id"]+=1
             next
           else
-            @seen_did[dataid]=true
+            @seen_did[dataid]=ent.name
           end
         end
         handlemsg(rec,clink,ent.name)
@@ -275,6 +290,8 @@ class App
     for msg, n in @errs
       eputs(sprintf("%06u: %s opfx=%s\n", n, msg, @opfx))
     end
+    @seen_md5.close
+    @seen_did.close
   end
 
 end

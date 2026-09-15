@@ -12,6 +12,8 @@ require 'uri'
 
 require 'gdbm'
 
+$myepoch = Time.now
+$errs = Hash.new(0)
 $facility = if STDERR.tty? then Syslog::LOG_USER else Syslog::LOG_NEWS end
 $logger = Syslog.open('wnm-obscache', Syslog::LOG_PID, $facility)
 $loggermx = Mutex.new
@@ -63,6 +65,7 @@ class WGet
         else
           eputs "#{res.code} - #{uri.path}"
         end
+        $errs[res.code.to_s]+=1
       rescue=>e
         eputs("#{e.class} #{e.message} - #{uri.path}")
       end
@@ -121,7 +124,6 @@ class App
     @wget=WGet.new
     @mutex=Mutex.new
     @progres=Progress.new
-    @errs=Hash.new(0)
     ymd=File.readlink(@odir)
     raise unless /(\d\d\d\d-\d\d-\d\d)/ === ymd
     y4m2d2=$1
@@ -187,18 +189,18 @@ class App
       tar.each_entry{|ent|
         topic=fnam_to_topic(ent.name.dup)
         unless @tpreg===topic
-          @errs["skip #{topic}"]+=1 if $VERBOSE
+          $errs["skip.#{topic}"]+=1 if $VERBOSE
           next
         end
         json=ent.read
         if json.nil?
-          @errs["nil tar entry - #{ent.name}"]+=1
+          $errs["nil_tar_entry.#{ent.name}"]+=1
           next
         end
         rec=JSON.parse(json)
         prop=rec['properties'] || Hash.new
         if not @gcsel===prop['global-cache']
-          @errs["skip gc #{prop['global-cache']}"]+=1 if $VERBOSE
+          $errs["skip_gc.#{prop['global-cache']}"]+=1 if $VERBOSE
           next
         end
         clink=nil
@@ -207,13 +209,13 @@ class App
           clink=link if /^(canonical|update)$/===link['rel']
         end
         unless clink
-          @errs["missing canonical link - #{ent.name}"]+=1
+          $errs["missing_canlink"]+=1
           next
         end
         dataid=prop['data_id']
         if dataid then
           if @seen_did[dataid] then
-            @errs["dup data_id"]+=1
+            $errs["dup_data_id"]+=1
             next
           else
             @seen_did[dataid]=ent.name
@@ -253,7 +255,7 @@ class App
         # dup check
         md5=Digest::MD5.hexdigest(msg);
         if @seen_md5[md5] then
-          @errs["dup md5"]+=1
+          $errs["dup_md5"]+=1
         else
           @seen_md5[md5]=entname
           # action
@@ -287,9 +289,8 @@ class App
   def run
     compile
     @otar.close
-    for msg, n in @errs
-      eputs(sprintf("%06u: %s opfx=%s\n", n, msg, @opfx))
-    end
+    $errs["tag"]=@opfx
+    eputs(sprintf("elapsed %g %s", Time.now-$myepoch, $errs.inspect))
     @seen_md5.close
     @seen_did.close
   end

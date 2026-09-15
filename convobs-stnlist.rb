@@ -206,12 +206,12 @@ class App
   def fnam_to_topic topic
     topic.sub!(/\.(json|bin)$/, '')
     topic.sub!(/^(wnm\d{4}-\d{6}|\d{4}[A-Z]{4})-/, '')
-    if /-gts-to-wis2_data_\w+_(([A-Z]_){4}\d\d)_([A-Z]{4})/ === topic
-      cccc,ttaaii=$3,$1
-      topic="gts-#{ttaaii.gsub(/_/,'')}-#{cccc}"
+    if /(jp|de)-\w+-gts-to-wis2_data_\w+_(([A-Z]_){4}\d\d)_([A-Z]{4})/ === topic
+      ctr,cccc,ttaaii=$1,$4,$2
+      topic="gts-#{ttaaii.gsub(/_/,'')}#{cccc}-#{ctr}"
     elsif /^A_([A-Z]{4}\d\d)([A-Z]{4})\d{6}/ === topic
       cccc,ttaaii=$2,$1
-      topic="gts-#{ttaaii}-#{cccc}"
+      topic="gts-#{ttaaii}#{cccc}"
     end
     topic.sub!(/_d_c_w_p_a_/, '_data_core_weather_prediction_analysis_')
     topic.sub!(/_d_c_w_p_f_/, '_data_core_weather_prediction_forecast_')

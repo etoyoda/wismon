@@ -23,7 +23,7 @@ export ymd
 test ! -f z.txt || rm -f z.txt
 
 gwjp=${nwp}/p0/${ymd}/gwjp-${ymd}.tar
-time ruby ${bindir}/convobs-stnlist.rb --topic=. ${gwjp} > convgwjp-${ymd}.txt 2> loggwjp-${ymd}.txt
+ruby ${bindir}/convobs-stnlist.rb --topic=. ${gwjp} > convgwjp-${ymd}.txt 2> loggwjp-${ymd}.txt
 if test -f convgwjp.txt ; then
   ruby ${bindir}/convobs-merge.rb convgwjp-${ymd}.txt convgwjp.txt > z.txt
   mv -f z.txt convgwjp.txt
@@ -32,7 +32,7 @@ else
 fi
 
 gwde=${nwp}/p0/${ymd}/gwde-${ymd}.tar
-time ruby ${bindir}/convobs-stnlist.rb --topic=. ${gwde} > convgwde-${ymd}.txt 2> loggwde-${ymd}.txt
+ruby ${bindir}/convobs-stnlist.rb --topic=. ${gwde} > convgwde-${ymd}.txt 2> loggwde-${ymd}.txt
 if test -f convgwde.txt ; then
   ruby ${bindir}/convobs-merge.rb convgwde-${ymd}.txt convgwde.txt > z.txt
   mv -f z.txt convgwde.txt

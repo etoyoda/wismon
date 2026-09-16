@@ -110,12 +110,14 @@ class App
     @gcsel='jp-jma-global-cache'
     @tpsel='(synop|temp|ship|wind-profile|buoys)'
     @opfx='wisbf'
+    @md5db=nil
     for arg in argv
       case arg
       when /^--gc=/ then @gcsel=$'
       when /^--topic=/ then @tpsel=$'
       when /^--odir=/ then @odir=$'
       when /^--opfx=/ then @opfx=$'
+      when /^--md5db=/ then @md5db=$'
       else @files.push arg
       end
     end
@@ -144,11 +146,15 @@ class App
       sleep 10
       retry
     end
-    md5fnam=File.join(File.dirname(ofnam),'wis2-md5.gdbm')
+    if @md5db.nil?
+      @md5db=File.join(File.dirname(ofnam),'wis2-md5.gdbm')
+    elsif @md5db==File.basename(@md5db)
+      @md5db=File.join(File.dirname(ofnam),@md5db)
+    end
     begin
-      @seen_md5=GDBM.new(md5fnam, 0644, GDBM::WRCREAT)
+      @seen_md5=GDBM.new(@md5db, 0644, GDBM::WRCREAT)
     rescue Errno::EAGAIN, GDBMError
-      $logger.error('waiting for %s', md5fnam)
+      $logger.error('waiting for %s', @md5db)
       sleep 10
       retry
     end

@@ -59,6 +59,7 @@ ONLYGTS=onlygts-${ymd}.txt
 ONLYWIS=onlywis-${ymd}.txt
 GWDEGTS=gwdegts-${ymd}.txt
 GWDEGWJP=gwdegwjp-${ymd}.txt
+GWJPGWDE=gwjpgwde-${ymd}.txt
 DATE=${ymd}T00
 
 if test ! -f $CONVWIS ; then
@@ -230,7 +231,7 @@ ENDLEGEND
   awk '(/DROP/ && $2 >= "'${DATE}'" && $8 ~ /gts-IUD/ && $7==$7+0 && $6==$6+0){print $7, $6}' $GWDEGWJP > $YTXT2
   gmt psxy $REGION $PROJ -Si3p -W0.5p,cyan -O -K < $YTXT2 >> $YPS
   gmt pslegend $REGION $PROJ -Dg-170/-34+w1.0i+jTL+o0.1i -F+gwhite+p0.25p+r2p -O >> $YPS <<ENDLEGEND
-H 6p,Helvetica-Bold GWDE-GTS Diff Coverage
+H 6p,Helvetica-Bold GWDE-GWJP Diff Coverage
 G 0p
 H 6p,Helvetica-Bold ${DATE}Z/PT24
 G 1p
@@ -240,6 +241,27 @@ S 0.50i t 3p - 0.5p,blue 0.55i TEMP
 ENDLEGEND
   gmt psconvert $YPS -A+m0.2c -Tg -P
   mv -f $YPNG gwdegwjp.png
+  rm -f $YPS $YTXT $YTXT2
+
+  : map 7 - GWJP minus GWDE
+  gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
+  awk '($2 >= "'${DATE}'" && $8 ~ /gts-IS[MNI]/ && $7==$7+0 && $6==$6+0){print $7, $6}' $GWJPGWDE > $YTXT
+  gmt psxy $REGION $PROJ -Sc2p -Gorange -W0.25p -O -K < $YTXT >> $YPS
+  awk '(!/DROP/ && $2 >= "'${DATE}'" && $8 ~ /gts-IU[PSK]/ && $7==$7+0 && $6==$6+0){print $7, $6}' $GWJPGWDE > $YTXT2
+  gmt psxy $REGION $PROJ -St3p -W0.5p,blue -O -K < $YTXT2 >> $YPS
+  awk '(/DROP/ && $2 >= "'${DATE}'" && $8 ~ /gts-IUD/ && $7==$7+0 && $6==$6+0){print $7, $6}' $GWJPGWDE > $YTXT2
+  gmt psxy $REGION $PROJ -Si3p -W0.5p,cyan -O -K < $YTXT2 >> $YPS
+  gmt pslegend $REGION $PROJ -Dg-170/-34+w1.0i+jTL+o0.1i -F+gwhite+p0.25p+r2p -O >> $YPS <<ENDLEGEND
+H 6p,Helvetica-Bold GWJP-GWDE Diff Coverage
+G 0p
+H 6p,Helvetica-Bold ${DATE}Z/PT24
+G 1p
+S 0.05i c 2p orange 0.25p 0.1i SYNOP
+G -6.5p
+S 0.50i t 3p - 0.5p,blue 0.55i TEMP
+ENDLEGEND
+  gmt psconvert $YPS -A+m0.2c -Tg -P
+  mv -f $YPNG gwjpgwde.png
   rm -f $YPS $YTXT $YTXT2
 
   rm -f gmt.conf gmt.history

@@ -71,7 +71,11 @@ ruby ${bindir}/convobs-diff.rb --unify convwis-${ymd}.txt convgts-${ymd}.txt > o
 ln -s -f onlygts-${ymd}.txt onlygts-cur.txt
 ln -s -f onlywis-${ymd}.txt onlywis-cur.txt
 
-if test -x ${bindir}/act-m2pics.sh ; then
+if test -f ${bindir}/act-convobs2.sh ; then
+  bash ${bindir}/act-convobs2.sh
+fi
+
+if test -f ${bindir}/act-m2pics.sh ; then
   bash ${bindir}/act-m2pics.sh
 fi
 

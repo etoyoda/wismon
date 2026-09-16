@@ -2,7 +2,7 @@
 06 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='(synop|wind-profile|ship|buoy)'
 07 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='metop-.+/(gras|ro)' --opfx=gras
 08 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='temp$' --opfx=wistm
-09 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='gts-I(SM|SN|SI|US|UK).......-jp' --opfx=gwjp
-10 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='gts-I(SM|SN|SI|US|UK).......-de' --opfx=gwde
+09 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='gts-I(SM|SN|SI|UD|UJ|UP|US|UK|UW).......-jp' --opfx=gwjp
+10 *  *  *  *  nwp ruby /usr/local/bin/wnm-obscache.rb --topic='gts-I(SM|SN|SI|UD|UJ|UP|US|UK|UW).......-de' --opfx=gwde
 13 09 *  *  *  nwp nwp=/nwp bash /usr/local/bin/run-convobs.sh
 30 09 02 *  *  nwp bash /usr/local/bin/run-m1-clean.sh

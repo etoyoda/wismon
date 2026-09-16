@@ -34,11 +34,24 @@
 set -e
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin
 hash -r
-cd /nwp/m2
 export LANG=C
 export TZ=UTC
 
 : ${ymd:?give me ymd}
+
+case "$(pwd)" in
+/nwp/m2|${HOME}/nwp-test/m2)
+  ;;
+*)
+  if [[ -w /nwp/m2 ]] ; then
+    echo auto-cd /nwp/m2
+    cd /nwp/m2
+  else
+    echo auto-cd ${HOME}/nwp-test/m2
+    cd ${HOME}/nwp-test/m2
+  fi
+  ;;
+esac
 
 CONVWIS=convwis-${ymd}.txt
 CONVGTS=convgts-${ymd}.txt

@@ -184,8 +184,6 @@ class App
     @tpsel='(synop|temp|ship|wind-profile|buoys)'
     @mod=1
     @rem=0
-    raise "--mod must be more than zero" if @mod <= 0
-    raise "--rem out of range" if @rem < 0 || @rem >= @mod
     for arg in argv
       case arg
       when /^--gc=/ then @gccel=$'
@@ -195,6 +193,8 @@ class App
       else @files.push arg
       end
     end
+    raise "--mod must be more than zero" if @mod <= 0
+    raise "--rem out of range" if @rem < 0 || @rem >= @mod
     @files.push(DEFPATH) if @files.empty?
     @tpreg=Regexp.new(@tpsel)
     @bufrdb=BufrDB.new(@bufrdbdir)

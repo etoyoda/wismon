@@ -258,8 +258,10 @@ class App
 
   def compile_phase2 topic, msg
     if msg.nil? then
+      @errs["NIL-tar"]+=1
       return
     elsif 'NIL'==msg or /\r\r\nNIL\r\r\n/===msg[0,128] then
+      @errs["NIL-msg"]+=1
       return
     elsif BFTP00 === msg then
       ofsb=0
@@ -283,6 +285,10 @@ class App
     elsif /\n(?:TT|PP)[A-D]{2} ([0156][0-9])(00)\d (\d{5}) +NIL=/===msg[0,128] then
       @dumper.topic=topic
       @dumper.register_tsi($1.to_i, $2.to_i, $3)
+    elsif /^[A-Z]{4}\d\d [A-Z]{4} \d{6}( [A-Z]{3})?\r\r\n(\r\r\n)?NIL=?$/===msg then
+      @errs["NIL-gw"]+=1
+    elsif /^[A-Z]{4}\d\d [A-Z]{4} \d{6}( [A-Z]{3})?\r\r\nCMP\n/===msg then
+      @errs["CMP"]+=1
     else
       @errs["not BUFR #{msg[0,50].inspect}"]+=1
     end

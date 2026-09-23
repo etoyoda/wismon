@@ -130,6 +130,9 @@ class BufrCheck
         # 9052 is for TM309052
         swsi=wsiformat(0,65534,9052,name)
         regbad("Guessed WSI 65534-9052 dropsonde")
+      elsif cat==0 and subcat==8 and 632==find(tree,'001101') then
+        swsi=wsiformat(0,20000,0,format('%05u',find(tree,'001102'))).sub(/ /,'?')
+        regbad("Netherland local stnid 001102")
       else
         row=[cat, subcat, @topic, descs]
         row.push(tree.flatten[0,32])

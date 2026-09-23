@@ -44,11 +44,11 @@ fi
 wistm=${nwp}/p0/${ymd}/wistm-${ymd}.tar
 
 if test -f ${wistm} ; then
-  time ruby ${bindir}/convobs-stnlist.rb ${wistm} \
+  ruby ${bindir}/convobs-stnlist.rb ${wistm} \
   > convwis-${ymd}-t.txt 2> logwis-${ymd}-t.txt &
 fi
 
-  time ruby ${bindir}/convobs-stnlist.rb ${wisbf} \
+  ruby ${bindir}/convobs-stnlist.rb ${wisbf} \
     > convwis-${ymd}-b.txt 2> logwis-${ymd}-b.txt &
 wait
 

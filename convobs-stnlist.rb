@@ -289,7 +289,7 @@ class App
     elsif /\n(?:TT|PP)[A-D]{2} ([0156][0-9])(00)\d (\d{5}) +NIL=/===msg[0,128] then
       @dumper.topic=topic
       @dumper.register_tsi($1.to_i, $2.to_i, $3)
-    elsif /^[A-Z]{4}\d\d [A-Z]{4} \d{6}( [A-Z]{3})?\r\r\n(\r\r\n)?NIL=?$/===msg then
+    elsif /^[A-Z]{4}\d\d [A-Z]{4} \d{6}( [A-Z]{3})?\r\r\n(\r\r\n)?NIL=?\x03?$/===msg then
       @errs["NIL-gw"]+=1
     elsif /^[A-Z]{4}\d\d [A-Z]{4} \d{6}( [A-Z]{3})?\r\r\nCMP\n/===msg then
       @errs["CMP"]+=1

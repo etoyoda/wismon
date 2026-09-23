@@ -279,7 +279,11 @@ class App
       end
     elsif /BUFR/===msg[0,128]
       ofs=msg.index('BUFR')
-      bmsg=BUFRMsg.new(msg,ofs,msg.size-ofs,0)
+      bufrlen=(msg.getbyte(ofs+4)<<16 | msg.getbyte(ofs+5)<<8 | msg.getbyte(ofs+6))
+      if bufrlen > msg.size-ofs
+        raise "truncated BUFR #{bufrlen} #{msg.size-ofs}"
+      end
+      bmsg=BUFRMsg.new(msg,ofs,bufrlen,0)
       @dumper.topic=topic
       @bufrdb.decode(bmsg,:direct,@dumper)
     elsif /\n(?:TT|PP)[A-D]{2} ([0156][0-9])(00)\d (\d{5}) +NIL=/===msg[0,128] then
@@ -297,7 +301,7 @@ class App
     emsg.sub!(/ES \d+ mismatch msg end \d+/, 'ES * mismatch msg end *')
     @errs["#{emsg} - #{topic}"]+=1
   rescue => e
-    @errs["#{e.class} - #{topic}"]+=1
+    @errs["#{e.class} #{e.message} - #{topic}"]+=1
   end
 
   def compile

@@ -296,6 +296,8 @@ class App
     emsg=e.to_s
     emsg.sub!(/ES \d+ mismatch msg end \d+/, 'ES * mismatch msg end *')
     @errs["#{emsg} - #{topic}"]+=1
+  rescue => e
+    @errs["#{e.class} - #{topic}"]+=1
   end
 
   def compile

@@ -280,7 +280,7 @@ class App
         end
         ofsb+=(blen+10)
       end
-    elsif /BUFR/===msg[0,128]
+    elsif /BUFR..../===msg[0,128]
       ofs=msg.index('BUFR')
       bufrlen=(msg.getbyte(ofs+4)<<16 | msg.getbyte(ofs+5)<<8 | msg.getbyte(ofs+6))
       if bufrlen > msg.size-ofs
@@ -305,7 +305,7 @@ class App
     emsg.sub!(/ES \d+ mismatch msg end \d+/, 'ES * mismatch msg end *')
     @errs["#{emsg} - #{topic}"]+=1
   rescue => e
-    @errs["#{e.class} #{e.message} - #{topic}"]+=1
+    @errs["#{e.class} #{e.message} #{e.backtrace.first} - #{topic}"]+=1
   end
 
   def compile

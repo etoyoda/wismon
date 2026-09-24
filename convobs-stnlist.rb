@@ -284,7 +284,8 @@ class App
       ofs=msg.index('BUFR')
       bufrlen=(msg.getbyte(ofs+4)<<16 | msg.getbyte(ofs+5)<<8 | msg.getbyte(ofs+6))
       if bufrlen > msg.size-ofs
-        raise "truncated BUFR #{bufrlen} #{msg.size-ofs}"
+        @errs["truncated BUFR #{bufrlen} - #{topic}"]+=1
+        return
       end
       bmsg=BUFRMsg.new(msg,ofs,bufrlen,0)
       @dumper.topic=topic

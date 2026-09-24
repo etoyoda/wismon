@@ -72,11 +72,11 @@ ln -s -f onlygts-${ymd}.txt onlygts-cur.txt
 ln -s -f onlywis-${ymd}.txt onlywis-cur.txt
 
 if test -f ${bindir}/act-convobs2.sh ; then
-  bash ${bindir}/act-convobs2.sh
+  bash ${bindir}/act-convobs2.sh || true
 fi
 
 if test -f ${bindir}/act-m2pics.sh ; then
-  bash ${bindir}/act-m2pics.sh
+  bash ${bindir}/act-m2pics.sh || true
 fi
 
 if [ -f /nwp/bin/send_png_mail.rb ] && [ -f convwis.png ]; then
@@ -108,5 +108,10 @@ if [ -f /nwp/m1/gtshist-jmagc.txt ]; then
   tar -uf ${m2tar} gtshist-jmagc-${ymd}.txt
   rm -f gtshist-jmagc-${ymd}.txt
 fi
+case ${ymd} in
+????-??-01)
+  tar -uf ${m2tar} convgts.txt convwis.txt
+  ;;
+esac
 
 echo done okay

@@ -133,10 +133,14 @@ class BufrCheck
       elsif cat==0 and subcat==8 and 632==find(tree,'001101') then
         swsi=wsiformat(0,20000,0,format('%05u',find(tree,'001102'))).sub(/ /,'?')
         regbad("Netherland local stnid 001102")
+      elsif /^30708[06]/===descs and ii.nil? and iii.nil? then
+        regbad("empty #{descs}")
+        return
       else
         row=[cat, subcat, @topic, descs]
         row.push(tree.flatten[0,32])
         STDERR.puts(row.inspect)
+        return
       end
     elsif /^0-20000-0-/===swsi and cat==2 then
       regbad("WSI 0-20000-0- for upper-air report")

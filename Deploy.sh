@@ -39,11 +39,16 @@ else
 fi
 
 for p in wnmsaver.rb wnm-topicstat.rb run-topicstat.sh topicstat-ctab.rb \
-  wnm-gtshist.rb wnm-convobs.rb convobs-merge.rb wnm-obscache.rb run-convobs.sh \
+  wnm-gtshist.rb convobs-merge.rb wnm-obscache.rb run-convobs.sh \
   convobs-stnlist.rb act-m2pics.sh run-m1-clean.sh convobs-diff.rb act-convobs2.sh
 do
   test -f $p
   sudo install $p /usr/local/bin/
+done
+
+for p in wnm-convobs.rb
+do
+  test ! -f $p || sudo rm -f /usr/local/bin/$p
 done
 
 test -d /nwp/m0 || sudo install -d -o nwp -g nwp /nwp/m0

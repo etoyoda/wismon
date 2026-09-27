@@ -263,6 +263,12 @@ class App
 
   BFTP00=/(\d{8})00\x01\r\r\n(\d\d\d)\r\r\n([A-Z]{4}\d\d [A-Z]{4} \d{6})/
 
+  def decode_msg topic, msg, ofs, bufrlen
+    bmsg=BUFRMsg.new(msg,ofs,bufrlen,0)
+    @dumper.topic=topic
+    @bufrdb.decode(bmsg,:direct,@dumper)
+  end
+
   def compile_phase2 topic, msg
     if msg.nil? then
       @errs["NIL-tar"]+=1
@@ -278,22 +284,22 @@ class App
         if ofsb_bufr then
           ofs=ofsb+ofsb_bufr
           bufrlen=(msg.getbyte(ofs+4)<<16 | msg.getbyte(ofs+5)<<8 | msg.getbyte(ofs+6))
-          bmsg=BUFRMsg.new(msg,ofs,bufrlen,0)
-          @dumper.topic=topic
-          @bufrdb.decode(bmsg,:direct,@dumper)
+          decode_msg(topic, msg, ofs, bufrlen)
         end
         ofsb+=(blen+10)
       end
-    elsif /BUFR..../===msg[0,128]
+    elsif /BUFR/===msg[0,128]
       ofs=msg.index('BUFR')
+      if msg.size < ofs+8
+        @errs["truncated BUFR Section 0 - #{topic}"]+=1
+        return
+      end
       bufrlen=(msg.getbyte(ofs+4)<<16 | msg.getbyte(ofs+5)<<8 | msg.getbyte(ofs+6))
       if bufrlen > msg.size-ofs
         @errs["truncated BUFR #{bufrlen} - #{topic}"]+=1
         return
       end
-      bmsg=BUFRMsg.new(msg,ofs,bufrlen,0)
-      @dumper.topic=topic
-      @bufrdb.decode(bmsg,:direct,@dumper)
+      decode_msg(topic, msg, ofs, bufrlen)
     elsif /\n(?:TT|PP)[A-D]{2} ([01235678][0-9])(00|12)\d (\d{5}) +NIL=/===msg[0,128] then
       @dumper.topic=topic
       @dumper.register_tsi($1.to_i, $2.to_i, $3)

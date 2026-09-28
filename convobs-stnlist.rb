@@ -163,7 +163,10 @@ class BufrCheck
   def register_tsi(iyy, igg, tsi)
     now=Time.now.utc
     iyy-=50 if iyy>50
-    rtime=Time.gm(now.year, now.mon, now.day, iyy, igg)
+    if iyy > now.day then
+      now -= 86400 * 27
+    end
+    rtime=Time.gm(now.year, now.mon, iyy, igg, 0)
     rtime-=86400 if rtime>now
     srtime=rtime.strftime('%Y%m%dT%H%M%S')
     row=[srtime,srtime,tsi,'//////','+NaN','+NaN',@topic,'NIL']
@@ -314,8 +317,6 @@ class App
     emsg=e.to_s
     emsg.sub!(/ES \d+ mismatch msg end \d+/, 'ES * mismatch msg end *')
     @errs["#{emsg} - #{topic}"]+=1
-  rescue => e
-    @errs["#{e.class} #{e.message} #{e.backtrace.first} - #{topic}"]+=1
   end
 
   def compile

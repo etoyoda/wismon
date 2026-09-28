@@ -22,13 +22,13 @@ else
     sudo usermod -aG adm nwp 2>/dev/null || true   # 既にadmに入っていてもエラーにならない
 fi
 
-for u in wismon[34].service
+for u in wismon[134].service
 do
   test -f $u
   sudo install -m 0644 $u /etc/systemd/system/$u
 done
 # decommissioned
-rm -f /etc/systemd/system/wismon[12].service
+rm -f /etc/systemd/system/wismon[2].service
 
 test -f wismon-cfg.json
 if test -f /usr/local/etc/wismon-cfg.json

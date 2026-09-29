@@ -11,29 +11,60 @@ require '/nwp/bin/bufrdump'
 
 class Progress
 
-  def initialize out
+  def initialize out, file1
     @out=out
+    @file1=file1
     @btime=Time.now.utc
     @n=0
+    @last_elapsed=0.0
+  end
+
+  def btime
+    @btime
+  end
+
+  def elapsed
+    Time.now-@btime
+  end
+  
+  def report t
+    @out.printf("%6u[msgs] %6.2f[s] %8.4g[msg/s]\n", @n, t, @n/t)
   end
 
   def ping
     @n+=1
-    return unless (@n % 1000)==1
-    t=(Time.now-@btime)
-    STDERR.printf("%6u[msgs] %6.2f[s] %8.4g[msg/s]\n", @n, t, @n/t)
+    t=elapsed()
+    return if t < @last_elapsed+1.0
+    report t
+    @last_elapsed=t
+  end
+
+  def endreport
+    t=elapsed()
+    report(t)
+    require 'syslog'
+    msg=sprintf("elapsed=%4.2f scanned=%u files=%s", t, @n, @file1)
+    if not STDERR.tty? then
+      Syslog.open('convobs-stnlist'){|logger|
+        logger.notice(msg)
+      }
+    end
   end
 
 end
 
 class BufrCheck
 
-  def initialize odb, err
+  def initialize odb, err, file1
     @hdr=nil
     @topic=nil
     @odb=odb
     @err=err
-    @progress=Progress.new(STDERR)
+    @progress=Progress.new(STDERR, file1)
+  end
+
+  def endreport
+    @progress.endreport
   end
 
   def regbad key
@@ -161,7 +192,7 @@ class BufrCheck
   end
 
   def register_tsi(iyy, igg, tsi)
-    now=Time.now.utc
+    now=@progress.btime
     iyy-=50 if iyy>50
     if iyy > now.day then
       now -= 86400 * 27
@@ -176,9 +207,6 @@ class BufrCheck
 
   def endbufr
     @hdr=nil
-  end
-
-  def close
   end
 
 end
@@ -210,7 +238,7 @@ class App
     @bufrdb=BufrDB.new(@bufrdbdir)
     @odb=Hash.new
     @errs=Hash.new(0)
-    @dumper=BufrCheck.new(@odb,@errs)
+    @dumper=BufrCheck.new(@odb,@errs,File.basename(@files.first.to_s))
   end
 
   def fnam_to_topic topic
@@ -335,6 +363,7 @@ class App
     for msg, n in @errs
       STDERR.printf("%06u: %s\n", n, msg)
     end
+    @dumper.endreport
   end
 
 end

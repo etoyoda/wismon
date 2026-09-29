@@ -28,7 +28,11 @@ fi
 test ! -f z.txt || rm -f z.txt
 
 filt=--topic='gts-I(SI|SM|SN|UD|UJ|UK|UP|US|UW)'
-ruby ${bindir}/convobs-stnlist.rb $filt ${gtsbf} > convgts-${ymd}.txt 2> loggts-${ymd}.txt
+{
+  ruby ${bindir}/convobs-stnlist.rb $filt ${gtsbf} \
+  > convgts-${ymd}.txt 2> loggts-${ymd}.txt \
+  || tail -30 loggts-${ymd}.txt
+}
 if test -f convgts.txt; then
   ruby ${bindir}/convobs-merge.rb convgts-${ymd}.txt convgts.txt > z.txt
   mv -f z.txt convgts.txt
@@ -44,12 +48,19 @@ fi
 wistm=${nwp}/p0/${ymd}/wistm-${ymd}.tar
 
 if test -f ${wistm} ; then
-  ruby ${bindir}/convobs-stnlist.rb ${wistm} \
-  > convwis-${ymd}-t.txt 2> logwis-${ymd}-t.txt &
+  {
+    ruby ${bindir}/convobs-stnlist.rb ${wistm} \
+    > convwis-${ymd}-t.txt 2> logwis-${ymd}-t.txt \
+    || tail -30 logwis-${ymd}-t.txt
+  } &
 fi
 
-  ruby ${bindir}/convobs-stnlist.rb ${wisbf} \
-    > convwis-${ymd}-b.txt 2> logwis-${ymd}-b.txt &
+  {
+    ruby ${bindir}/convobs-stnlist.rb ${wisbf} \
+    > convwis-${ymd}-b.txt 2> logwis-${ymd}-b.txt \
+    || tail -30 logwis-${ymd}-b.txt 
+  } &
+
 wait
 
 if test -f ${wistm} ; then
@@ -113,5 +124,3 @@ case ${ymd} in
   tar -uf ${m2tar} convgts.txt convwis.txt
   ;;
 esac
-
-echo done okay

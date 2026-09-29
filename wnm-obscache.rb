@@ -142,7 +142,7 @@ class App
     begin
       @seen_did=GDBM.new(didfnam, 0644, GDBM::WRCREAT)
     rescue Errno::EAGAIN, GDBMError
-      $logger.error('waiting for %s', didfnam)
+      $logger.err('waiting for %s', didfnam)
       sleep 10
       retry
     end
@@ -154,7 +154,7 @@ class App
     begin
       @seen_md5=GDBM.new(@md5db, 0644, GDBM::WRCREAT)
     rescue Errno::EAGAIN, GDBMError
-      $logger.error('waiting for %s', @md5db)
+      $logger.err('waiting for %s', @md5db)
       sleep 10
       retry
     end

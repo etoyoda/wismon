@@ -96,7 +96,16 @@ class BufrCheck
     wsi3 = if wsi3 then format('%u', wsi3) else '/' end
     # theoretically wsi4 should be left-aligned and wsi4.rstrip would suffice
     # but in reality some wsi4 comes with left-padded spaces
-    wsi4 = case wsi4 when String then wsi4.strip when Integer then wsi4.to_s else '/////' end
+    wsi4 = case wsi4
+      when String then
+        wsi4.bytes.map{|c|
+          (32 <= c && c < 127) ? c : 32
+        }.pack('C*').strip.sub(/\s+.*/,'')
+      when Integer then
+        wsi4.to_s
+      else
+        '/////'
+      end
     format('%-31s', [wsi1, wsi2, wsi3, wsi4].join('-'))
   end
 

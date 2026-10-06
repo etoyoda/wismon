@@ -9,12 +9,16 @@ class App
   def initialize argv
     @path='/nwp/m0/{us,fr}gb[012][0-9].tar.gz'
     topic='uk-metoffice-wmc'
+    @rtime=ENV['TIMECARD']
     for arg in argv
       case arg
       when /^--path=/ then @path = $'
       when /^--topic=/ then topic = $'
+      when /^--timecard=/ then @rtime=$'
       end
     end
+    @rtime=File.read('TIMECARD') if @rtime.nil?
+    @rtime=Time.gm(*(@rtime.split(/ +/)))
     @rtopic=Regexp.new(topic)
   end
 
@@ -26,20 +30,20 @@ class App
   'cape-surface' => 'CAPEs',
   'dewpoint-temperature' => 'Td',
   'geopotential-height' => 'Z',
-  'precipitation-accumulation-3h' => 'RR3H',
-  'precipitation-accumulation-6h' => 'RR6H',
+  'precipitation-accumulation-3h' => 'RAIN',
+  'precipitation-accumulation-6h' => 'RAIN',
   'pressure-reduced-to-msl' => 'Pmsl',
-  'snowfall-accumulation-water-equivalent-unsmoothed-orography-3h' => 'SN3H',
-  'snowfall-accumulation-water-equivalent-unsmoothed-orography-6h' => 'SN6H',
+  'snowfall-accumulation-water-equivalent-unsmoothed-orography-3h' => 'SNOW',
+  'snowfall-accumulation-water-equivalent-unsmoothed-orography-6h' => 'SNOW',
   'relative-humidity' => 'RH',
   'temperature' => 'T',
-  'temperature-max-3h' => 'Tmax3H',
-  'temperature-min-3h' => 'Tmin3H',
+  'temperature-max-3h' => 'Tmax',
+  'temperature-min-3h' => 'Tmin',
   'total-cloud-cover' => 'CLA',
   'u-component-of-wind' => 'U',
   'v-component-of-wind' => 'V',
-  'wind-speed-gust-max-3h' => 'GUST3H',
-  'wind-speed-gust-max-6h' => 'GUST6H',
+  'wind-speed-gust-max-3h' => 'GUST',
+  'wind-speed-gust-max-6h' => 'GUST',
   }
 
   AREAS = {
@@ -83,6 +87,11 @@ class App
     raise EBADF, "unknown element #{el}" unless ELEMS[el]
     raise EBADF, "unknown area #{dbb}" unless AREAS[dbb]
     raise EBADF, "level name #{lv} != #{dlv}" if lv != dlv
+    plev = case lv
+      when '1.5','10',nil then 1013
+      when /^\d+$/ then lv.to_i / 100
+      else raise EBADF, "unknown level #{lv}"
+      end
     raise EBADF, "format name #{dfm} != grib2" if dfm != 'grib2'
     unless /^(\d{4})(\d\d)(\d\d)T(\d\d)(\d\d)(\d\d)Z$/ =~ dbt
       raise EBADF, "bad btime #{dbt}"
@@ -109,8 +118,21 @@ class App
     else
       raise EBADF, "unknown daf #{daf}"
     end
-    {:btime=>btime,:prodname=>pn,:elem=>ELEMS[el],:lev=>lv,
+    {:btime=>btime,:prodname=>pn,:elem=>ELEMS[el],:lev=>plev,
     :vtime=>vtime,:ftime=>ftime,:area=>AREAS[dbb]}
+  end
+
+  def filter row
+    return false if @rtime != row[:btime]
+    if [6,9,15].include?(row[:ftime])
+      case row[:lev]
+      when 1013
+        ['U','V','T','Pmsl','RAIN'].include?(row[:elem])
+      when 250,500,700,850
+        ['U','V','T','RH','Z'].include?(row[:elem])
+      end
+    else false
+    end
   end
 
   def run3 topic, json
@@ -119,6 +141,7 @@ class App
     rec=JSON.parse(json)
     did = rec['properties']['data_id']
     row=did_parse(did)
+    return unless filter(row)
     @z[row[:btime]]+=1
   end
 

@@ -185,8 +185,8 @@ class App
     else
       raise EBADF, "unknown daf #{daf}"
     end
-    entnam=format('%s.%s/%7s.%4u.%03u.%2s.grib2',
-      pn,dbt,ELEMS[el],plev,ftime,AREAS[dbb]).gsub(/ /,'_')
+    entnam=format('%s.%s/%-7s.%04u.%03u.%-2s.grib2',
+      dbt,pn,ELEMS[el],plev,ftime,AREAS[dbb]).gsub(/ /,'_')
     {
       :btime=>btime,:prodname=>pn,:elem=>ELEMS[el],:lev=>plev,
       :vtime=>vtime,:ftime=>ftime,:area=>AREAS[dbb],:entnam=>entnam
@@ -232,6 +232,7 @@ class App
 
   def wnm_scan
     Dir.glob(@path).each{|gzfn|
+      puts "scanning #{gzfn}"
       TarReader.open(gzfn){|tar|
 	tar.each_entry{|ent|
 	  wnm_parse(ent.name, ent.read)
@@ -258,6 +259,7 @@ class App
 	next
       end
       @mutex.synchronize {
+        puts "writing #{entnam} #{data.bytesize}"
 	@otar.add(entnam, data)
 	@db_did[did][:done]=true
       }
@@ -279,7 +281,7 @@ class App
   end
 
   def download
-    @otar=TarWriter.new(@ofnam,'a')
+    @otar=TarWriter.new(@ofnam,'w')
     GC_ORDER.each{|gc|
       try_gc(gc)
     }

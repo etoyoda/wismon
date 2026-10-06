@@ -3,23 +3,90 @@
 require 'zlib'
 require 'tarreader'
 require 'json'
+require 'tarwriter'
+require 'net/http/persistent'
+require 'uri'
+
+class WGet
+
+  def initialize
+    @http=Net::HTTP::Persistent.new(name: 'EPT/wnm-ukwmc')
+    @q=Queue.new
+    @done=false
+  end
+
+  attr_reader :done
+
+  def done!
+    @done=true
+  end
+
+  def done?
+    @done && @q.empty?
+  end
+
+  def submit did, entnam, uristr
+    uri=URI.parse(uristr)
+    @q << [did, entnam, uri]
+  end
+
+  def harvest
+    did=entnam=data=nil
+    begin
+      did, entnam, uri=@q.pop(true)
+    rescue ThreadError
+      return [nil,nil,nil]
+    end
+    begin
+      res=@http.request(uri)
+      if res.code.to_i==200
+        data=res.body
+      else
+        warn "HTTP #{res.code} #{uri}"
+      end
+    rescue => e
+      warn "#{e.class} #{e.message} #{uri}"
+    end
+    [did,entnam,data]
+  end
+
+  def shutdown
+    @http.shutdown
+  end
+
+end
 
 class App
+
+  GC_ORDER=%w(
+    jp-jma-global-cache
+    data-metoffice-noaa-global-cache
+    cn-cma-global-cache
+    kr-kma-global-cache
+  )
 
   def initialize argv
     @path='/nwp/m0/{us,fr}gb[012][0-9].tar.gz'
     topic='uk-metoffice-wmc'
     @rtime=ENV['TIMECARD']
+    @ofnam="z.ukwmc.tar"
+    @otar=nil
+    @threads=3
     for arg in argv
       case arg
       when /^--path=/ then @path = $'
       when /^--topic=/ then topic = $'
       when /^--timecard=/ then @rtime=$'
+      when /^--ofnam=/ then @ofnam=$'
+      when /^--threads=/ then @threads=$'.to_i
       end
     end
     @rtime=File.read('TIMECARD') if @rtime.nil?
     @rtime=Time.gm(*(@rtime.split(/ +/)))
     @rtopic=Regexp.new(topic)
+    @db_did=Hash.new
+    @mutex=Mutex.new
+    @wget=nil
   end
 
   class EBADF < Errno::EBADF
@@ -118,8 +185,12 @@ class App
     else
       raise EBADF, "unknown daf #{daf}"
     end
-    {:btime=>btime,:prodname=>pn,:elem=>ELEMS[el],:lev=>plev,
-    :vtime=>vtime,:ftime=>ftime,:area=>AREAS[dbb]}
+    entnam=format('%s.%s/%7s.%4u.%03u.%2s.grib2',
+      pn,dbt,ELEMS[el],plev,ftime,AREAS[dbb]).gsub(/ /,'_')
+    {
+      :btime=>btime,:prodname=>pn,:elem=>ELEMS[el],:lev=>plev,
+      :vtime=>vtime,:ftime=>ftime,:area=>AREAS[dbb],:entnam=>entnam
+    }
   end
 
   def filter row
@@ -135,31 +206,90 @@ class App
     end
   end
 
-  def run3 topic, json
+  def wnm_register row, did, rec
+    href=nil
+    links=rec['links'] || []
+    for link in links
+      href=link['href'] if /^(canonical|update)$/===link['rel']
+    end
+    return unless href
+    gc=rec['properties']['global-cache']
+    return unless gc
+    @db_did[did] = Hash.new unless @db_did.include?(did)
+    row[:url] = href
+    @db_did[did][gc] = row
+  end
+
+  def wnm_parse topic, json
     return unless @rtopic === topic
     return if json.nil?
     rec=JSON.parse(json)
     did = rec['properties']['data_id']
     row=did_parse(did)
     return unless filter(row)
-    @z[row[:btime]]+=1
+    wnm_register(row,did,rec)
   end
 
-  def run2
+  def wnm_scan
     Dir.glob(@path).each{|gzfn|
       TarReader.open(gzfn){|tar|
 	tar.each_entry{|ent|
-	  run3(ent.name, ent.read)
+	  wnm_parse(ent.name, ent.read)
 	}
       }
     }
   rescue Interrupt => e
   end
 
+  def submitter gcname
+    @db_did.each{|did, wnms|
+      next if wnms[:done]
+      next unless wnms[gcname]
+      @wget.submit(did, wnms[gcname][:entnam], wnms[gcname][:url])
+    }
+  end
+
+  def harvester
+    loop do
+      did,entnam,data=@wget.harvest
+      if data.nil?
+        break if @wget.done?
+	sleep 0.1
+	next
+      end
+      @mutex.synchronize {
+	@otar.add(entnam, data)
+	@db_did[did][:done]=true
+      }
+    end
+  end
+
+  def try_gc gcname
+    puts "try #{gcname}"
+    @wget=WGet.new
+    producer=Thread.new{ submitter(gcname) }
+    workers=@threads.times.map{ |tid|
+      Thread.new{ harvester }
+    }
+    producer.join
+    @wget.done!
+    workers.each(&:join)
+  ensure
+    @wget.shutdown if @wget
+  end
+
+  def download
+    @otar=TarWriter.new(@ofnam,'a')
+    GC_ORDER.each{|gc|
+      try_gc(gc)
+    }
+  ensure
+    @otar.close if @otar
+  end
+
   def run
-    @z=Hash.new(0)
-    run2
-    puts @z.inspect
+    wnm_scan
+    download
   end
 
 end

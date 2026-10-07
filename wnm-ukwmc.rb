@@ -197,12 +197,22 @@ class App
 
   def filter row
     return false if @rtime != row[:btime]
-    if [6,9,15].include?(row[:ftime])
+    elem=row[:elem]
+    ftime=row[:ftime]
+    if [6,9,15].include?(ftime)
       case row[:lev]
       when 1013
-        ['U','V','T','Pmsl','RAIN'].include?(row[:elem])
+        ['U','V','T','Pmsl','RRate'].include?(elem)
       when 250,500,700,850
-        ['U','V','T','RH','Z'].include?(row[:elem])
+        ['U','V','T','RH','Z'].include?(elem)
+      end
+    elsif [12,24,48,72,96,120].include?(ftime)
+      case row[:lev]
+      when 1013 then ['Pmsl','RRate'].include?(elem)
+      when 500 then ['T','Z'].include?(elem)
+      when 700 then ['RH'].include?(elem)
+      when 850 then ['T','RH','Z'].include?(elem)
+      else false
       end
     else false
     end

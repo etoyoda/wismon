@@ -71,6 +71,8 @@ class App
     @rtime=ENV['TIMECARD']
     @ofnam="z.ukwmc.tar"
     @otar=nil
+    @invoked_at=Time.now.utc
+    @dlfiles=0
     @threads=3
     for arg in argv
       case arg
@@ -97,11 +99,11 @@ class App
   'cape-surface' => 'CAPEs',
   'dewpoint-temperature' => 'Td',
   'geopotential-height' => 'Z',
-  'precipitation-accumulation-3h' => 'RAIN',
-  'precipitation-accumulation-6h' => 'RAIN',
+  'precipitation-accumulation-3h' => 'RRate',
+  'precipitation-accumulation-6h' => 'RRate',
   'pressure-reduced-to-msl' => 'Pmsl',
-  'snowfall-accumulation-water-equivalent-unsmoothed-orography-3h' => 'SNOW',
-  'snowfall-accumulation-water-equivalent-unsmoothed-orography-6h' => 'SNOW',
+  'snowfall-accumulation-water-equivalent-unsmoothed-orography-3h' => 'SnRWe',
+  'snowfall-accumulation-water-equivalent-unsmoothed-orography-6h' => 'SnRWe',
   'relative-humidity' => 'RH',
   'temperature' => 'T',
   'temperature-max-3h' => 'Tmax',
@@ -109,8 +111,8 @@ class App
   'total-cloud-cover' => 'CLA',
   'u-component-of-wind' => 'U',
   'v-component-of-wind' => 'V',
-  'wind-speed-gust-max-3h' => 'GUST',
-  'wind-speed-gust-max-6h' => 'GUST',
+  'wind-speed-gust-max-3h' => 'maxWS',
+  'wind-speed-gust-max-6h' => 'maxWS',
   }
 
   AREAS = {
@@ -239,6 +241,7 @@ class App
 	}
       }
     }
+    puts "scan elapsed #{Time.now-@invoked_at}, #{@db_did.size} dids"
   rescue Interrupt => e
   end
 
@@ -249,6 +252,9 @@ class App
       @wget.submit(did, wnms[gcname][:entnam], wnms[gcname][:url])
     }
   end
+
+  # 重複排除は @db_dd[did][:done] の有無によるため、
+  # 複数gcをスレッド並列してはならない。
 
   def harvester
     loop do
@@ -262,6 +268,7 @@ class App
         puts "writing #{entnam} #{data.bytesize}"
 	@otar.add(entnam, data)
 	@db_did[did][:done]=true
+	@dlfiles+=1
       }
     end
   end
@@ -292,6 +299,11 @@ class App
   def run
     wnm_scan
     download
+    puts "elapsed #{Time.now-@invoked_at}, #{@dlfiles} files downloaded"
+    if @dlfiles.zero?
+      warn "no file downloaded"
+      exit 16
+    end
   end
 
 end

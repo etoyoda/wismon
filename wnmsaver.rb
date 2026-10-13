@@ -17,9 +17,6 @@ def setcfg key
   $cfg[:ssl] = true
   $cfg[:username] = u.user
   $cfg[:password] = u.password
-  t = u.path.sub(/^\//, '')
-  t += "##{u.fragment}" if t and u.fragment
-  $topics.push t unless t.empty?
 end
 
 for arg in ARGV
@@ -37,6 +34,7 @@ for arg in ARGV
     end
   end
 end
+raise "topics not specified" if $topics.empty?
 
 class TarSaver
 

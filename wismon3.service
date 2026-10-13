@@ -1,9 +1,9 @@
 [Unit]
-Description=WisMon3 jp-jma global cache
+Description=WisMon3 jp-jma global-cache jpgateway
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/ruby /usr/local/bin/wnmsaver.rb --out=/nwp/m0/jmagc%%H.tar jmagc 'origin/a/wis2/jp-jma-gts-to-wis2/#'
+ExecStart=/usr/bin/ruby /usr/local/bin/wnmsaver.rb --out=/nwp/m0/jmagc%%H.tar jmagc cache/a/wis2/# 'origin/a/wis2/jp-jma-gts-to-wis2/#'
 Restart=always
 RestartSec=30
 User=nwp

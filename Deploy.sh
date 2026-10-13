@@ -22,13 +22,13 @@ else
     sudo usermod -aG adm nwp 2>/dev/null || true   # 既にadmに入っていてもエラーにならない
 fi
 
-for u in wismon[134].service
+for u in wismon[1234].service
 do
   test -f $u
   sudo install -m 0644 $u /etc/systemd/system/$u
 done
 # decommissioned
-rm -f /etc/systemd/system/wismon[2].service
+rm -f /etc/systemd/system/wismon[5].service
 
 test -f wismon-cfg.json
 if test -f /usr/local/etc/wismon-cfg.json
@@ -40,7 +40,8 @@ fi
 
 for p in wnmsaver.rb wnm-topicstat.rb run-topicstat.sh topicstat-ctab.rb \
   wnm-gtshist.rb convobs-merge.rb wnm-obscache.rb run-convobs.sh \
-  convobs-stnlist.rb act-m2pics.sh run-m1-clean.sh convobs-diff.rb act-convobs2.sh
+  convobs-stnlist.rb act-m2pics.sh run-m1-clean.sh convobs-diff.rb act-convobs2.sh \
+  pwnmsaver.py
 do
   test -f $p
   sudo install $p /usr/local/bin/

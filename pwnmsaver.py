@@ -41,10 +41,13 @@ def setcfg(key):
 def alpha_seq(n):
     if n >= 26**4:
         raise RuntimeError("sequence overflow")
-    s=""
+
+    s = ""
+
     for _ in range(4):
-        s=chr(ord('A')+n%26)+s
+        s = chr(ord('A') + n % 26) + s
         n //= 26
+
     return s
 
 class TarSaver:
@@ -209,9 +212,9 @@ def build_client():
 
     if transport == "websockets":
         print(
-        f"websocket path {cfg['ws_path']}",
-        file=sys.stderr
-    )
+            f"websocket path {cfg['ws_path']}",
+            file=sys.stderr
+        )
 
         path = cfg.get("ws_path", "/")
 

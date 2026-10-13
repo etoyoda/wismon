@@ -38,6 +38,15 @@ def setcfg(key):
 
     cfg["ws_path"] = u.path or "/"
 
+def alpha_seq(n):
+    if n >= 26**4:
+        raise RuntimeError("sequence overflow")
+    s=""
+    for _ in range(4):
+        s=chr(ord('A')+n%26)+s
+        n //= 26
+    return s
+
 class TarSaver:
 
     def __init__(self, fnpat):
@@ -119,7 +128,7 @@ class TarSaver:
 
         tnam = tnam.replace("/", "_")
 
-        seqname = f"{self.seq:04X}"
+        seqname = alpha_seq(self.seq)
 
         mnam = (
             f"{now.strftime('%d%H')}"

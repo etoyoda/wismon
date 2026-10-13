@@ -250,15 +250,8 @@ def on_message(client, userdata, msg):
 
 
 def sig_handler(signum, frame):
-
     saver.close()
-
-    print(
-        f"signal {signum} - quitting",
-        file=sys.stderr
-    )
-
-    sys.exit(16)
+    os._exit(16)
 
 
 parser = argparse.ArgumentParser()
@@ -339,16 +332,16 @@ if not topics:
 scheme = cfg.get("scheme", "mqtts")
 
 if scheme == "mqtt":
-    cfg.setdefault("port", 1883)
+    cfg["port"] = cfg.get("port") or 1883
 
 elif scheme == "mqtts":
-    cfg.setdefault("port", 8883)
+    cfg["port"] = cfg.get("port") or 8883
 
 elif scheme == "ws":
-    cfg.setdefault("port", 80)
+    cfg["port"] = cfg.get("port") or 80
 
 elif scheme == "wss":
-    cfg.setdefault("port", 443)
+    cfg["port"] = cfg.get("port") or 443
 
 saver = TarSaver(args.fnpat)
 

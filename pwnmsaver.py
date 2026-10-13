@@ -36,13 +36,7 @@ def setcfg(key):
     cfg["username"] = u.username
     cfg["password"] = u.password
 
-    topic = u.path.lstrip("/")
-    if u.fragment:
-        topic += "#" + u.fragment
-
-    if topic:
-        topics.append(topic)
-
+    cfg["ws_path"] = u.path or "/"
 
 class TarSaver:
 
@@ -199,7 +193,16 @@ def build_client():
     if tls:
         client.tls_set()
 
+    print(
+        f"connecting {scheme}://{cfg['host']}:{cfg['port']}",
+        file=sys.stderr
+    )
+
     if transport == "websockets":
+        print(
+        f"websocket path {cfg['ws_path']}",
+        file=sys.stderr
+    )
 
         path = cfg.get("ws_path", "/")
 
@@ -346,26 +349,6 @@ elif scheme == "ws":
 
 elif scheme == "wss":
     cfg.setdefault("port", 443)
-
-u = None
-
-try:
-    with open(CFGFILE, "r") as fp:
-        js = json.load(fp)
-
-    for val in js.values():
-
-        uu = urlparse(val)
-
-        if uu.hostname == cfg["host"]:
-            u = uu
-            break
-
-except Exception:
-    pass
-
-if u and u.path:
-    cfg["ws_path"] = u.path
 
 saver = TarSaver(args.fnpat)
 

@@ -24,16 +24,8 @@ done
 cd /nwp/m2
 for tar in wismon2-*.tar
 do
-  # if a tarball for a past month exists and that is not found in a2 directory
-  if [[ "wismon2-${thismon}.tar" > "${tar}" && \
-	  ! -f "/nwp/a2/${tar}.gz" ]]; then
-    cp -f ${tar} /nwp/a2/${tar}
-    gzip -f -9 /nwp/a2/${tar}
-  fi
-  # if a tarball before last month exists and that is found in a2 directory
-  if [[ "wismon2-${prevmon}.tar" > "${tar}" && \
-	  -f "/nwp/a2/${tar}.gz" ]]; then
+  # if a tarball before last month exists that is deleted
+  if [[ "wismon2-${prevmon}.tar" > "${tar}" ]]; then
     rm -f ${tar}
   fi
 done
-find . -ctime +31 -a \( -name '*-*.txt' -o -name '*-*.png' \) -delete

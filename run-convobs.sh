@@ -124,3 +124,12 @@ case ${ymd} in
   tar -uf ${m2tar} convgts.txt convwis.txt
   ;;
 esac
+
+mkdir -p /nwp/a2/${ym}
+set +C
+gzip -c -9 ${m2tar} > /nwp/a2/${ym}/${m2tar}.gz.tmp
+mv -f                 /nwp/a2/${ym}/${m2tar}.gz.tmp \
+                      /nwp/a2/${ym}/${m2tar}.gz
+
+# delete old files
+find . -ctime +7 -a \( -name '*-20*.txt' -o -name '*-20*.png' \) -delete

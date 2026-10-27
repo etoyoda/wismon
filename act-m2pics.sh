@@ -37,7 +37,8 @@ hash -r
 export LANG=C
 export TZ=UTC
 
-: ${ymd:?give me ymd}
+: ${ymd:?give me ymd in YYYY-MM-DD format}
+ymdprev=$(ruby -rtime -e 'puts((Time.parse(ARGV.first)-86400).strftime("%Y-%m-%d"))' ${ymd})
 
 case "$(pwd)" in
 /nwp/m2|${HOME}/nwp-test/m2)
@@ -54,6 +55,7 @@ case "$(pwd)" in
 esac
 
 CONVWIS=convwis-${ymd}.txt
+CONVWISP=convwis-${ymdprev}.txt
 CONVGTS=convgts-${ymd}.txt
 ONLYGTS=onlygts-${ymd}.txt
 ONLYWIS=onlywis-${ymd}.txt
@@ -110,7 +112,7 @@ ENDLEGEND
   rm -f $YPS $YTXT $YTXT2
   mv -f $YPNG convgts.png
 
-  : map 1 - SYNOP and TEMP
+  : map 1 - SYNOP and TEMP for WIS
   gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
   awk '($2 >= "'${DATE}'" && $8 ~ /synop/ && $7==$7+0 && $6==$6+0){print $7, $6}' $CONVWIS > $YTXT
   gmt psxy $REGION $PROJ -Sc2p -Gorange -W0.25p -O -K < $YTXT >> $YPS
@@ -285,6 +287,53 @@ ENDLEGEND
   gmt psconvert $YPS -A+m0.2c -Tg -P
   mv -f $YPNG gtsgwjp.png
   rm -f $YPS $YTXT $YTXT2
+
+  WISNEW=wisnew.txt
+  WISOLD=wisold.txt
+
+  convobs-diff.rb $CONVWIS $CONVWISP > $WISNEW
+  : map 9 - SYNOP and TEMP for WIS
+  gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
+  awk '($2 >= "'${DATE}'" && $8 ~ /synop/ && $7==$7+0 && $6==$6+0){print $7, $6}' $WISNEW > $YTXT
+  gmt psxy $REGION $PROJ -Sc2p -Gorange -W0.25p -O -K < $YTXT >> $YPS
+  awk '(!/DROP/ && $2 >= "'${DATE}'" && $8 ~ /temp/ && $7==$7+0 && $6==$6+0){print $7, $6}' $WISNEW > $YTXT2
+  gmt psxy $REGION $PROJ -St3p -W0.5p,blue -O -K < $YTXT2 >> $YPS
+  awk '(/DROP/ && $2 >= "'${DATE}'" && $8 ~ /temp/ && $7==$7+0 && $6==$6+0){print $7, $6}' $WISNEW > $YTXT2
+  gmt psxy $REGION $PROJ -Si3p -W0.5p,cyan -O -K < $YTXT2 >> $YPS
+  gmt pslegend $REGION $PROJ -Dg-170/-34+w1.0i+jTL+o0.1i -F+gwhite+p0.25p+r2p -O >> $YPS <<ENDLEGEND
+H 6p,Helvetica-Bold WIS2 New Since Yesterday
+G 0p
+H 6p,Helvetica-Bold ${DATE}Z/PT24
+G 1p
+S 0.05i c 2p orange 0.25p 0.1i SYNOP
+G -6.5p
+S 0.50i t 3p - 0.5p,blue 0.55i TEMP
+ENDLEGEND
+  gmt psconvert $YPS -A+m0.2c -Tg -P
+  rm -f $YPS $YTXT $YTXT2
+  mv -f $YPNG wisnew.png
+
+  convobs-diff.rb $CONVWISP $CONVWIS > $WISOLD
+  : map 10 - SYNOP and TEMP for WIS
+  gmt pscoast $REGION $PROJ -B30g30 -Dc -A5000 -W0.25p -N1/0.25p -P -K > $YPS
+  awk '($2 >= "'${DATE}'" && $8 ~ /synop/ && $7==$7+0 && $6==$6+0){print $7, $6}' $WISOLD > $YTXT
+  gmt psxy $REGION $PROJ -Sc2p -Gorange -W0.25p -O -K < $YTXT >> $YPS
+  awk '(!/DROP/ && $2 >= "'${DATE}'" && $8 ~ /temp/ && $7==$7+0 && $6==$6+0){print $7, $6}' $WISOLD > $YTXT2
+  gmt psxy $REGION $PROJ -St3p -W0.5p,blue -O -K < $YTXT2 >> $YPS
+  awk '(/DROP/ && $2 >= "'${DATE}'" && $8 ~ /temp/ && $7==$7+0 && $6==$6+0){print $7, $6}' $WISOLD > $YTXT2
+  gmt psxy $REGION $PROJ -Si3p -W0.5p,cyan -O -K < $YTXT2 >> $YPS
+  gmt pslegend $REGION $PROJ -Dg-170/-34+w1.0i+jTL+o0.1i -F+gwhite+p0.25p+r2p -O >> $YPS <<ENDLEGEND
+H 6p,Helvetica-Bold WIS2 Missing Since Yesterday
+G 0p
+H 6p,Helvetica-Bold ${DATE}Z/PT24
+G 1p
+S 0.05i c 2p orange 0.25p 0.1i SYNOP
+G -6.5p
+S 0.50i t 3p - 0.5p,blue 0.55i TEMP
+ENDLEGEND
+  gmt psconvert $YPS -A+m0.2c -Tg -P
+  rm -f $YPS $YTXT $YTXT2
+  mv -f $YPNG wisold.png
 
   rm -f gmt.conf gmt.history
 fi

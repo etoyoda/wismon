@@ -91,7 +91,7 @@ if test -f ${bindir}/act-m2pics.sh ; then
 fi
 
 if [ -f /nwp/bin/send_png_mail.rb ] && [ -f convwis.png ]; then
-  ruby /nwp/bin/send_png_mail.rb convwis.png onlygts.png onlywis.png
+  ruby /nwp/bin/send_png_mail.rb convwis.png wisnew.png wisold.png
 else
   user=$(whoami)
   {

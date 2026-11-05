@@ -41,7 +41,7 @@ fi
 for p in wnmsaver.rb wnm-topicstat.rb run-topicstat.sh topicstat-ctab.rb \
   wnm-gtshist.rb convobs-merge.rb wnm-obscache.rb run-convobs.sh \
   convobs-stnlist.rb act-m2pics.sh run-m1-clean.sh convobs-diff.rb act-convobs2.sh \
-  pwnmsaver.py
+  pwnmsaver.py wnm-ukwmc.rb
 do
   test -f $p
   sudo install $p /usr/local/bin/

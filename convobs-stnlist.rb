@@ -307,6 +307,9 @@ class App
     bmsg=BUFRMsg.new(msg,ofs,bufrlen,0)
     @dumper.topic=topic
     @bufrdb.decode(bmsg,:direct,@dumper)
+  rescue => e
+    p [topic, bmsg.descs]
+    raise
   end
 
   def compile_phase2 topic, msg

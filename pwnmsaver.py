@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import io
 import os
 import re
 import signal
@@ -98,7 +99,8 @@ class TarSaver:
 
             self.tar = tarfile.open(
                 self.fnam,
-                mode="a"
+                mode="a",
+                format=tarfile.USTAR_FORMAT
             )
 
             print(f"open {self.fnam}", file=sys.stderr)
@@ -151,9 +153,7 @@ class TarSaver:
 
         info = tarfile.TarInfo(mnam)
         info.size = len(data)
-        info.mtime = now.timestamp()
-
-        import io
+        info.mtime = int(now.timestamp())
 
         self.tar.addfile(
             info,

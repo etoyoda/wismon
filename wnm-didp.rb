@@ -17,10 +17,18 @@ end
 
 rtopic=Regexp.new(topic)
 
+pax_path = nil
 Dir.glob(path).each{|gzfn|
   TarReader.open(gzfn){|tar|
     tar.each_entry{|ent|
-      next unless rtopic === ent.name 
+      if ent.name.include?('@PaxHeader') or ent.name.include?('PaxHeaders.')
+        pax = ent.read.to_s
+        pax_path = pax[/^\d+ path=(.*)$/, 1]
+        next
+      end
+      name = pax_path || ent.name
+      pax_path = nil
+      next unless rtopic === name
       json=ent.read
       next if json.nil?
       rec=JSON.parse(json)

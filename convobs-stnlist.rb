@@ -287,7 +287,12 @@ class App
           @errs["nil tar entry - #{ent.name}"]+=1
           next
         end
-        compile_phase2(topic, msg.b)
+        begin
+          compile_phase2(topic, msg.b)
+        rescue StandardError => e
+          @errs["E #{e.class} - #{topic}"]+=1
+          STDERR.puts "#{ent.name}: #{e.class} #{e.message}"
+        end
       }
     }
   end
@@ -301,14 +306,23 @@ class App
     }
   end
 
+  # バッチFTP形式（GTS bulk FTP format）のヘッダ
   BFTP00=/(\d{8})00\x01\r\r\n(\d\d\d)\r\r\n([A-Z]{4}\d\d [A-Z]{4} \d{6})/
 
   def decode_msg topic, msg, ofs, bufrlen
     bmsg=BUFRMsg.new(msg,ofs,bufrlen,0)
     @dumper.topic=topic
     @bufrdb.decode(bmsg,:direct,@dumper)
+  rescue BUFRMsg::EBADF, BUFRMsg::ENOSYS
+    # compile_phase2 で集計させる
+    raise
   rescue => e
-    p [topic, bmsg.descs]
+    descs = begin
+      bmsg && bmsg.descs
+    rescue StandardError
+      '(descs unavailable)'
+    end
+    STDERR.puts [topic, ofs, bufrlen, descs, e.class.to_s, e.message].inspect
     raise
   end
 
@@ -326,8 +340,21 @@ class App
         ofsb_bufr=msg[ofsb,128].index('BUFR')
         if ofsb_bufr then
           ofs=ofsb+ofsb_bufr
+          if msg.size < ofs+8
+            @errs["truncated BUFR Section 0 (BFTP) - #{topic}"]+=1
+            break
+          end
           bufrlen=(msg.getbyte(ofs+4)<<16 | msg.getbyte(ofs+5)<<8 | msg.getbyte(ofs+6))
-          decode_msg(topic, msg, ofs, bufrlen)
+          if bufrlen > msg.size-ofs or bufrlen > blen
+            @errs["truncated BUFR #{bufrlen} (BFTP) - #{topic}"]+=1
+          else
+            begin
+              decode_msg(topic, msg, ofs, bufrlen)
+            rescue BUFRMsg::EBADF, BUFRMsg::ENOSYS => e
+              STDERR.puts "#{topic}: #{e.message}" if /: ofs=/ === e.message
+              @errs["#{e.message.sub(/:.*/m,'').gsub(/\d+$/,'*')} - #{topic}"]+=1
+            end
+          end
         end
         ofsb+=(blen+10)
       end
@@ -355,7 +382,8 @@ class App
     end
   rescue BUFRMsg::EBADF, BUFRMsg::ENOSYS => e
     emsg=e.to_s
-    emsg.sub!(/ES \d+ mismatch msg end \d+/, 'ES * mismatch msg end *')
+    STDERR.puts "#{topic}: #{emsg}" if /: ofs=/ === emsg
+    emsg=emsg.sub(/:.*/m,'').gsub(/\d+/,'*')
     @errs["#{emsg} - #{topic}"]+=1
   end
 
@@ -376,6 +404,7 @@ class App
       STDERR.printf("%06u: %s\n", n, msg)
     end
     @dumper.endreport
+    exit 1 if @errs.keys.any?(/^E /)
   end
 
 end
